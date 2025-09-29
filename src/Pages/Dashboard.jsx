@@ -1,183 +1,95 @@
-// import React from "react";
-// import Navbar from "../Components/Navbar";
-// import WelcomeSection from "../Components/WelcomeSection";
-// import SuccessStories from "../Components/SuccessStories";
-// import Opportunities from "../Components/Oppertunities";
-// import NeedGuidance from "../Components/Needguidance";
-
-// const Dashboard = () => {
-//   const successStories = [
-//     {
-//       id: 1,
-//       author: "Sarah Chen",
-//       title: "How I Got a Full Scholarship to MIT",
-//       description:
-//         "My journey from a small town university to MIT with a full scholarship. Here are the steps I took...",
-//       tag: "Fully Funded",
-//       time: "2 days ago",
-//       comments: 24,
-//     },
-//     {
-//       id: 2,
-//       author: "Ahmed Khan",
-//       title: "Half Scholarship Experience at Oxford",
-//       description:
-//         "Securing a half scholarship at Oxford was challenging but achievable. Let me share my strategy...",
-//       tag: "Half Scholarship",
-//       time: "1 week ago",
-//       comments: 18,
-//     },
-//     {
-//       id: 3,
-//       author: "Maria Rodriguez",
-//       title: "Exchange Program Success Story",
-//       description:
-//         "My semester abroad changed everything. Here's how I made it happen with limited resources...",
-//       tag: "Exchange",
-//       time: "2 weeks ago",
-//       comments: 31,
-//     },
-//   ];
-
-//   const opportunities = [
-//     {
-//       id: 1,
-//       title: "Fulbright Scholarship Program",
-//       provider: "US Department of State",
-//       tag: "Fully Funded",
-//       location: "United States",
-//       details: "Full funding + stipend",
-//       deadline: "10/15/2024",
-//     },
-//     {
-//       id: 2,
-//       title: "Erasmus+ Masters Programme",
-//       provider: "European Union",
-//       tag: "Partially Funded",
-//       location: "Europe",
-//       details: "€1,400/month",
-//       deadline: "12/1/2024",
-//     },
-//     {
-//       id: 3,
-//       title: "DAAD Research Grants",
-//       provider: "German Academic Exchange Service",
-//       tag: "Research Grant",
-//       location: "Germany",
-//       details: "€1,200/month",
-//       deadline: "11/30/2024",
-//     },
-//   ];
-
-//   return (
-//     <div className="min-h-screen bg-white">
-//       <Navbar />
-//       <WelcomeSection />
-//       <div className="grid grid-cols-3 gap-8 px-8">
-//         <SuccessStories stories={successStories} />
-//         <Opportunities opportunities={opportunities} />
-//       </div>
-//       <NeedGuidance />
-//     </div>
-//   );
-// };
-
-// export default Dashboard;
-
-
-
-import React from "react";
+// src/Pages/Dashboard.jsx
+import React, { useEffect, useState } from "react";
 import Navbar from "../Components/Navbar";
-import WelcomeSection from "../Components/WelcomeSection";
-import SuccessStories from "../Components/SuccessStories";
-import Opportunities from "../Components/Oppertunities";
-import NeedGuidance from "../Components/Needguidance";
+import { motion } from "framer-motion";
+import { GraduationCap, BookOpen, MessageSquare, Award } from "lucide-react";
 
 const Dashboard = () => {
-  const successStories = [
-    {
-      id: 1,
-      author: "Sarah Chen",
-      title: "How I Got a Full Scholarship to MIT",
-      description:
-        "My journey from a small town university to MIT with a full scholarship. Here are the steps I took...",
-      tag: "Fully Funded",
-      time: "2 days ago",
-      comments: 24,
-    },
-    {
-      id: 2,
-      author: "Ahmed Khan",
-      title: "Half Scholarship Experience at Oxford",
-      description:
-        "Securing a half scholarship at Oxford was challenging but achievable. Let me share my strategy...",
-      tag: "Half Scholarship",
-      time: "1 week ago",
-      comments: 18,
-    },
-    {
-      id: 3,
-      author: "Maria Rodriguez",
-      title: "Exchange Program Success Story",
-      description:
-        "My semester abroad changed everything. Here's how I made it happen with limited resources...",
-      tag: "Exchange",
-      time: "2 weeks ago",
-      comments: 31,
-    },
-  ];
+  const [user, setUser] = useState(null);
 
-  const opportunities = [
+  useEffect(() => {
+    const email = localStorage.getItem("userEmail");
+    const name = localStorage.getItem("userName");
+    setUser({ email, name });
+  }, []);
+
+  const sections = [
     {
       id: 1,
-      title: "Fulbright Scholarship Program",
-      provider: "US Department of State",
-      tag: "Fully Funded",
-      location: "United States",
-      details: "Full funding + stipend",
-      deadline: "10/15/2024",
+      title: "Scholarships",
+      desc: "Explore top global opportunities with deadlines, eligibility, and benefits.",
+      icon: GraduationCap,
+      link: "/scholarships",
     },
     {
       id: 2,
-      title: "Erasmus+ Masters Programme",
-      provider: "European Union",
-      tag: "Partially Funded",
-      location: "Europe",
-      details: "€1,400/month",
-      deadline: "12/1/2024",
+      title: "Success Stories",
+      desc: "Read inspiring journeys of students who achieved scholarships worldwide.",
+      icon: Award,
+      link: "/stories",
     },
     {
       id: 3,
-      title: "DAAD Research Grants",
-      provider: "German Academic Exchange Service",
-      tag: "Research Grant",
-      location: "Germany",
-      details: "€1,200/month",
-      deadline: "11/30/2024",
+      title: "Q&A / Mentors",
+      desc: "Ask questions and connect with verified mentors who’ve done it before.",
+      icon: MessageSquare,
+      link: "/qa",
+    },
+    {
+      id: 4,
+      title: "Courses",
+      desc: "Upskill with hand-picked online courses in tech, design, and more.",
+      icon: BookOpen,
+      link: "/courses",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* <Navbar /> */}
-      <WelcomeSection />
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <Navbar />
 
-      {/* Responsive Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 px-4 sm:px-6 lg:px-8">
-        {/* Success Stories takes 2 columns on large screens */}
-        <div className="lg:col-span-2">
-          <SuccessStories stories={successStories} />
-        </div>
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-16 text-center">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+          Welcome {user?.name || user?.email || "Learner"} 🎓
+        </h1>
+        <p className="text-gray-200 max-w-2xl mx-auto">
+          Your personalized hub for scholarships, mentorship, and global learning opportunities.
+        </p>
+      </header>
 
-        {/* Opportunities section */}
-        <div>
-          <Opportunities opportunities={opportunities} />
-        </div>
-      </div>
+      {/* Sections */}
+      <motion.main
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={{
+          hidden: { opacity: 0 },
+          visible: { opacity: 1, transition: { staggerChildren: 0.2 } },
+        }}
+        className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 flex-grow"
+      >
+        {sections.map((s) => (
+          <motion.a
+            key={s.id}
+            href={s.link}
+            variants={{ hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0 } }}
+            className="bg-white rounded-2xl shadow hover:shadow-lg transition p-6 flex flex-col"
+          >
+            <s.icon className="w-12 h-12 text-blue-600 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">{s.title}</h3>
+            <p className="text-gray-600 text-sm flex-grow">{s.desc}</p>
+            <span className="mt-4 text-blue-600 text-sm font-medium hover:underline">
+              View More →
+            </span>
+          </motion.a>
+        ))}
+      </motion.main>
 
-      <div className="px-4 sm:px-6 lg:px-8">
-        <NeedGuidance />
-      </div>
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-400 text-center text-sm py-4 mt-auto">
+        © {new Date().getFullYear()} EduBridge. All rights reserved.
+      </footer>
     </div>
   );
 };

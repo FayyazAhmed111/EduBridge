@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
   const [fullName, setFullName] = useState("");
@@ -11,144 +12,153 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // ✅ store fake registration in localStorage
+    // fake registration in localStorage
     localStorage.setItem("isLoggedIn", "true");
     localStorage.setItem("userEmail", email);
     localStorage.setItem("userName", fullName);
     localStorage.setItem("accountType", accountType);
 
-    onClose(); // close modal
-    navigate("/dashboard"); // redirect after register
+    onClose();
+    navigate("/dashboard");
   };
 
-  if (!isOpen) return null; // hidden until opened
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-6 relative">
-        {/* Close Button */}
-        <button
-          className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
-          onClick={onClose}
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
         >
-          ✕
-        </button>
-
-        {/* Logo & Title */}
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center mb-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-10 w-10 text-black"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 30 }}
+            transition={{ duration: 0.3 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative"
+          >
+            {/* Close */}
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+              onClick={onClose}
             >
-              <path d="M12 14l9-5-9-5-9 5 9 5z" />
-              <path d="M12 14l6.16-3.422A12.083 12.083 0 0118 20.5 12.083 12.083 0 0112 22a12.083 12.083 0 01-6-1.5 12.083 12.083 0 01-.16-9.922L12 14z" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-semibold text-gray-900">Edu Bridge</h1>
-          <p className="text-sm text-gray-500">
-            Your gateway to international education opportunities
-          </p>
-        </div>
+              ✕
+            </button>
 
-        {/* Form */}
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          {/* Full Name */}
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Full Name</label>
-            <input
-              type="text"
-              placeholder="John Doe"
-              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 text-sm"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              placeholder="your.email@uni.edu"
-              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 text-sm"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 text-sm"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Account Type */}
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Account Type</label>
-            <div className="space-y-2">
-              <label className="flex items-center text-sm text-gray-700">
-                <input
-                  type="radio"
-                  name="accountType"
-                  value="student"
-                  checked={accountType === "student"}
-                  onChange={() => setAccountType("student")}
-                  className="mr-2"
-                />
-                Student
-              </label>
-              <label className="flex items-center text-sm text-gray-700">
-                <input
-                  type="radio"
-                  name="accountType"
-                  value="mentor"
-                  checked={accountType === "mentor"}
-                  onChange={() => setAccountType("mentor")}
-                  className="mr-2"
-                />
-                Mentor (requires admin approval)
-              </label>
+            {/* Logo + Title */}
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 mx-auto flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-2xl font-bold shadow-md">
+                🎓
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mt-4">
+                Create Account
+              </h1>
+              <p className="text-sm text-gray-500">
+                Join EduBridge and unlock new opportunities
+              </p>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            className="w-full bg-black text-white py-2 rounded-md text-sm font-semibold hover:bg-gray-900"
-          >
-            Create Account
-          </button>
-        </form>
+            {/* Form */}
+            <form className="space-y-5" onSubmit={handleSubmit}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
 
-        {/* Sign In link */}
-        <p className="text-sm text-gray-600 mt-4 text-center">
-          Already have an account?{" "}
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              onSwitch && onSwitch("login"); // ✅ switch to login modal
-            }}
-            className="text-blue-600 font-medium hover:underline"
-          >
-            Sign in here
-          </button>
-        </p>
-      </div>
-    </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  placeholder="your.email@uni.edu"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Account Type
+                </label>
+                <div className="flex items-center gap-6 mt-2">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="accountType"
+                      value="student"
+                      checked={accountType === "student"}
+                      onChange={() => setAccountType("student")}
+                      className="text-indigo-600 focus:ring-indigo-500"
+                    />
+                    Student
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="accountType"
+                      value="mentor"
+                      checked={accountType === "mentor"}
+                      onChange={() => setAccountType("mentor")}
+                      className="text-indigo-600 focus:ring-indigo-500"
+                    />
+                    Mentor
+                  </label>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:opacity-90 transition"
+              >
+                Create Account
+              </button>
+            </form>
+
+            {/* Switch to Login */}
+            <p className="text-sm text-gray-600 mt-6 text-center">
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onSwitch && onSwitch("login");
+                }}
+                className="text-indigo-600 font-medium hover:underline"
+              >
+                Sign in here
+              </button>
+            </p>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

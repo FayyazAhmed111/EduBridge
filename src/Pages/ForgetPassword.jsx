@@ -1,71 +1,101 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import Navbar from "../Components/Navbar";
+import LoginModal from "../Modal/LoginModal";
+import RegisterModal from "../Modal/RegisterModal";
 
 const ForgetPassword = () => {
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+
+  // 🔄 handle modal switching
+  const handleSwitch = (target) => {
+    if (target === "login") {
+      setShowRegister(false);
+      setShowLogin(true);
+    }
+    if (target === "register") {
+      setShowLogin(false);
+      setShowRegister(true);
+    }
+  };
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-white px-4">
-      <div className="w-full max-w-sm">
-        {/* Logo & Title */}
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center mb-2">
-            {/* Graduation Cap Icon */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-10 w-10 text-black"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path d="M12 14l9-5-9-5-9 5 9 5z" />
-              <path d="M12 14l6.16-3.422A12.083 12.083 0 0118 20.5 12.083 12.083 0 0112 22a12.083 12.083 0 01-6-1.5 12.083 12.083 0 01-.16-9.922L12 14z" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-semibold text-gray-900">Edu Bridge</h1>
-          <p className="text-sm text-gray-500">
-            Your gateway to international education opportunities
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* ✅ Navbar */}
+      <Navbar />
 
-        {/* Card */}
-        <div className="bg-white shadow rounded-xl border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-800 mb-1">
-            Forgot Password?
-          </h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Enter your registered email to reset your password
-          </p>
-
-          {/* Form */}
-          <form className="space-y-4">
-            {/* Email */}
-            <div>
-              <label className="block text-sm text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                placeholder="your.email@uni.edu"
-                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-              />
+      {/* Main Content */}
+      <div className="flex flex-1 items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          {/* Logo & Title */}
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 mx-auto flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-2xl font-bold shadow-md">
+              🎓
             </div>
+            <h1 className="text-2xl font-bold text-gray-900 mt-4">
+              Edu Bridge
+            </h1>
+            <p className="text-sm text-gray-500">
+              Your gateway to international education opportunities
+            </p>
+          </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className="w-full bg-black text-white py-2 rounded-md text-sm font-semibold hover:bg-gray-900"
-            >
-              Send Reset Link
-            </button>
-          </form>
+          {/* Card */}
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">
+              Forgot Password?
+            </h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Enter your registered email and we’ll send you a reset link.
+            </p>
 
-          {/* Back to Sign In */}
-          <p className="text-sm text-gray-600 mt-4 text-center">
-            Remember your password?{" "}
-            <Link to="/" className="text-black font-medium hover:underline">
-              Sign in here
-            </Link>
-          </p>
+            {/* Form */}
+            <form className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  placeholder="your.email@uni.edu"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:opacity-90 transition"
+              >
+                Send Reset Link
+              </button>
+            </form>
+
+            {/* Back to Sign In */}
+            <p className="text-sm text-gray-600 mt-6 text-center">
+              Remember your password?{" "}
+              <button
+                onClick={() => setShowLogin(true)}
+                className="text-indigo-600 font-medium hover:underline"
+              >
+                Sign in here
+              </button>
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <LoginModal
+        isOpen={showLogin}
+        onClose={() => setShowLogin(false)}
+        onSwitch={handleSwitch}
+      />
+      <RegisterModal
+        isOpen={showRegister}
+        onClose={() => setShowRegister(false)}
+        onSwitch={handleSwitch}
+      />
     </div>
   );
 };
