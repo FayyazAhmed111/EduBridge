@@ -9,16 +9,12 @@ import AboutPage from "./Pages/About";
 import ForgetPassword from "./Pages/ForgetPassword";
 import ContactPage from "./Pages/Contact";
 import CoursesPage from "./Pages/Course";
-import LoginPage from "./Pages/LoginPage";
-import RegisterPage from "./Pages/RegisterPage";
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/stories" element={<SuccessStoriesPage />} />
         <Route path="/qa" element={<QAPage />} />
