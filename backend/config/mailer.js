@@ -1,20 +1,40 @@
 import nodemailer from "nodemailer";
+import hbs from "nodemailer-express-handlebars";
+import path from "path";
+import { fileURLToPath } from "url";
 
-export const mailer = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: false,
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
   },
 });
 
-export const sendMail = async ({ to, subject, html }) => {
-  return mailer.sendMail({
-    from: process.env.SMTP_FROM,
+
+const handlebarOptions = {
+  viewEngine: {
+    extName: ".hbs",
+    partialsDir: path.resolve(__dirname, "../emails"),
+    defaultLayout: false,
+  },
+  viewPath: path.resolve(__dirname, "../emails"),
+  extName: ".hbs",
+};
+
+transporter.use("compile", hbs(handlebarOptions));
+
+export const sendMail = async ({ to, subject, template, context, html }) => {
+  return transporter.sendMail({
+    from: `"EduBridge" <${process.env.MAIL_USER}>`,
     to,
     subject,
-    html,
+    ...(template
+      ? { template, context } 
+      : { html }),            
   });
 };
