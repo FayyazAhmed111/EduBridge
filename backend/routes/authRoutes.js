@@ -5,11 +5,10 @@ import {
   sendAdminInviteOtp,
   verifyEmail, resendEmailVerification,
   forgotPassword, resetPassword, changePassword,
-  updateProfile, deleteAccount,
-  approveMentor, rejectMentor
+  updateProfile, deleteAccount
 } from "../controllers/authController.js";
 
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
 import { loginLimiter, checkBruteforce } from "../middleware/rateLimit.js";
 
 const router = Router();
@@ -42,8 +41,6 @@ router.post("/change-password", requireAuth, changePassword);
 router.patch("/profile", requireAuth, updateProfile);
 router.delete("/account", requireAuth, deleteAccount);
 
-// Mentor moderation 
-router.post("/mentor/:mentorId/approve", requireAuth, requireRole("admin"), approveMentor);
-router.post("/mentor/:mentorId/reject", requireAuth, requireRole("admin"), rejectMentor);
+
 
 export default router;

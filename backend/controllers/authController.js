@@ -4,10 +4,14 @@ import crypto from "crypto";
 import User from "../models/User.js";
 import Otp from "../models/Otp.js";
 import EmailVerification from "../models/EmailVerification.js";
+import { auditLog } from "../services/auditService.js";
 import { sendMail } from "../config/mailer.js";
 
 
-// Helper to make tokens
+// Helpers
+const hash = async (plain) => await bcrypt.hash(plain, 10);
+const compare = async (plain, hashv) => await bcrypt.compare(plain, hashv);
+
 const makeAccessToken = (user) =>
   jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" });
 
@@ -25,32 +29,78 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-    if (!user.isVerified && user.role !== "admin") {
-      return res.status(403).json({ message: "Please verify your email before logging in." });
+    //  Account suspension check
+    if (user.isSuspended) {
+      return res.status(403).json({
+        message: "Your account has been suspended by an administrator. Please contact support.",
+      });
     }
 
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.status(400).json({ message: "Invalid credentials" });
+    if (user.suspendedUntil && user.suspendedUntil > Date.now()) {
+      return res.status(403).json({
+        message: "Your account is temporarily locked due to multiple failed login attempts. Please reset your password to unlock.",
+      });
+    }
 
-    //ssGenerate tokens
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      user.failedLoginAttempts += 1;
+
+      // Suspend account after 5 failed attempts
+      if (user.failedLoginAttempts >= 5) {
+        user.isSuspended = true;
+        user.suspendedUntil = new Date(Date.now() + 60 * 60 * 1000); // 1 hour suspension
+        await user.save();
+
+        // Send suspicious activity email
+        await sendMail({
+          to: user.email,
+          subject: "Suspicious Login Attempts Detected",
+          html: `
+            <p>Hello ${user.name},</p>
+            <p>We detected multiple failed login attempts on your account.</p>
+            <p>🚨 Your account has been <b>temporarily suspended for 1 hour</b>.</p>
+            <p>Please reset your password to unlock immediately:</p>
+            <a href="${process.env.FRONTEND_URL}/forgot-password">Reset Password</a>
+          `
+        });
+
+        return res.status(403).json({ message: "Account suspended. Reset password to unlock." });
+      }
+
+      await user.save();
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // reset protection fields
+    user.failedLoginAttempts = 0;
+    user.isSuspended = false;
+    user.suspendedUntil = null;
+
     const accessToken = makeAccessToken(user);
     const refreshToken = makeRefreshToken(user);
 
-    //Save refresh token in DB
-    user.refreshTokens = user.refreshTokens || [];
     user.refreshTokens.push(refreshToken);
     await user.save();
 
-    //Return both tokens
-    res.json({
-      accessToken,
-      refreshToken,
-      user,
+    res.json({ accessToken, refreshToken, user });
+
+    //  Audit log
+    await auditLog(req, {
+      action: "auth.login",
+      outcome: "success",
+      targetType: "user",
+      targetId: user._id,
+      message: "User logged in",
     });
+
   } catch (e) {
     res.status(500).json({ message: "Login failed", error: e.message });
   }
 };
+
+
 
 
 // ---------- ME ----------
@@ -84,7 +134,7 @@ export const registerStudent = async (req, res) => {
     await EmailVerification.create({
       userId: user._id,
       token,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h expiry
     });
 
     await sendMail({
@@ -94,11 +144,21 @@ export const registerStudent = async (req, res) => {
              <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>`
     });
 
-    res.status(201).json({ message: "Check your email to verify account." });
+    await auditLog(req, {
+      action: "auth.register.student",
+      outcome: "success",
+      targetType: "user",
+      targetId: user._id,
+      message: "Student registered (verification email sent)",
+    });
+
+    return res.status(201).json({ message: "Check your email to verify account." });
+
   } catch (e) {
     res.status(500).json({ message: "Registration failed", error: e.message });
   }
 };
+
 
 // ---------- MENTOR REGISTER ----------
 export const registerMentor = async (req, res) => {
@@ -124,7 +184,7 @@ export const registerMentor = async (req, res) => {
     await EmailVerification.create({
       userId: user._id,
       token,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h expiry
     });
 
     await sendMail({
@@ -134,11 +194,21 @@ export const registerMentor = async (req, res) => {
              <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>`
     });
 
-    res.status(201).json({ message: "Check your email to verify mentor account." });
+    await auditLog(req, {
+      action: "auth.register.mentor",
+      outcome: "success",
+      targetType: "user",
+      targetId: user._id,
+      message: "Mentor registered (verification email sent)",
+    });
+
+    return res.status(201).json({ message: "Check your email to verify mentor account." });
+
   } catch (e) {
     res.status(500).json({ message: "Registration failed", error: e.message });
   }
 };
+
 
 // ---------- ADMIN OTP ----------
 export const sendAdminInviteOtp = async (req, res) => {
@@ -163,11 +233,11 @@ export const sendAdminInviteOtp = async (req, res) => {
 
     await Otp.create({ email: to, purpose: "admin_invite", codeHash, expiresAt });
 
-    
+
     await sendMail({
       to,
       subject: "EduBridge Admin OTP Code",
-      template: "adminOtp", 
+      template: "adminOtp",
       context: {
         code,
         resetLink: `${process.env.FRONTEND_URL}/forgot-password`
@@ -214,8 +284,16 @@ export const registerAdmin = async (req, res) => {
       isVerified: true
     });
 
-    const token = makeToken(user);
+    const token = makeAccessToken(user);
     res.status(201).json({ token, user });
+
+    await auditLog(req, {
+      action: "auth.register.admin",
+      targetType: "user",
+      targetId: user._id,
+      message: "Admin registered ",
+    });
+
   } catch (e) {
     res.status(500).json({ message: "Admin creation failed", error: e.message });
   }
@@ -238,9 +316,18 @@ export const verifyEmail = async (req, res) => {
     await EmailVerification.deleteMany({ userId: user._id });
 
     res.json({ message: "Email verified successfully." });
+    await auditLog(req, {
+      action: "auth.verifyEmail",
+      targetType: "user",
+      targetId: user._id,
+      message: "Email verified",
+    });
+
   } catch (e) {
     res.status(500).json({ message: "Verification failed", error: e.message });
   }
+
+
 };
 
 // ---------- RESEND EMAIL VERIFICATION ----------
@@ -270,6 +357,9 @@ export const resendEmailVerification = async (req, res) => {
     });
 
     res.json({ message: "Verification email resent." });
+
+
+
   } catch (e) {
     res.status(500).json({ message: "Failed to resend verification", error: e.message });
   }
@@ -294,6 +384,14 @@ export const forgotPassword = async (req, res) => {
     });
 
     res.json({ message: "Reset link sent to email" });
+
+    await auditLog(req, {
+      action: "auth.forgotPassword",
+      targetType: "user",
+      targetId: user._id,
+      message: "Password reset link sent",
+    });
+
   } catch (e) {
     res.status(500).json({ message: "Failed to send reset link", error: e.message });
   }
@@ -303,20 +401,38 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
-    if (!token || !newPassword) return res.status(400).json({ message: "Token and new password required" });
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Token and new password required" });
+    }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     user.password = await hash(newPassword);
+
+    // Reset suspension after password reset
+    user.failedLoginAttempts = 0;
+    user.isSuspended = false;
+    user.suspendedUntil = null;
+
     await user.save();
 
-    res.json({ message: "Password updated successfully" });
+    res.json({ message: "Password updated & account unlocked" });
+
+    await auditLog(req, {
+      action: "auth.resetPassword",
+      targetType: "user",
+      targetId: user._id,
+      message: "Password reset completed & account unlocked",
+      severity: "medium",
+    });
+
   } catch (e) {
     res.status(500).json({ message: "Failed to reset password", error: e.message });
   }
 };
+
 
 // ---------- CHANGE PASSWORD ----------
 export const changePassword = async (req, res) => {
@@ -332,71 +448,80 @@ export const changePassword = async (req, res) => {
     await user.save();
 
     res.json({ message: "Password changed successfully" });
+
+    await auditLog(req, {
+      action: "auth.changepassword",
+      targetType: "user",
+      targetId: user._id,
+      message: "Password reset completed",
+      severity: "medium",
+    });
+
   } catch (e) {
     res.status(500).json({ message: "Failed to change password", error: e.message });
   }
 };
 
-// ---------- APPROVE MENTOR ----------
-export const approveMentor = async (req, res) => {
-  try {
-    const { mentorId } = req.params;
-    const user = await User.findById(mentorId);
-    if (!user || user.role !== "mentor") {
-      return res.status(404).json({ message: "Mentor not found" });
-    }
+// // ---------- APPROVE MENTOR ----------
+// export const approveMentor = async (req, res) => {
+//   try {
+//     const { mentorId } = req.params;
+//     const user = await User.findById(mentorId);
+//     if (!user || user.role !== "mentor") {
+//       return res.status(404).json({ message: "Mentor not found" });
+//     }
 
-    user.mentorProfile.status = "approved";
-    user.mentorProfileHistory = null; 
-    await user.save();
+//     user.mentorProfile.status = "approved";
+//     user.mentorProfileHistory = null; 
+//     await user.save();
 
-    await sendMail({
-      to: user.email,
-      subject: "Mentor Profile Approved",
-      html: `<p>Congratulations! 🎉 Your mentor profile has been approved at EduBridge.</p>`
-    });
+//     await sendMail({
+//       to: user.email,
+//       subject: "Mentor Profile Approved",
+//       html: `<p>Congratulations! 🎉 Your mentor profile has been approved at EduBridge.</p>`
+//     });
 
-    res.json({ message: "Mentor approved successfully", user });
-  } catch (e) {
-    res.status(500).json({ message: "Failed to approve mentor", error: e.message });
-  }
-};
+//     res.json({ message: "Mentor approved successfully", user });
+//   } catch (e) {
+//     res.status(500).json({ message: "Failed to approve mentor", error: e.message });
+//   }
+// };
 
 
-// ---------- REJECT MENTOR ----------
-export const rejectMentor = async (req, res) => {
-  try {
-    const { mentorId } = req.params;
-    const { reason } = req.body; // admin types reason
-    const user = await User.findById(mentorId);
-    if (!user || user.role !== "mentor") {
-      return res.status(404).json({ message: "Mentor not found" });
-    }
+// // ---------- REJECT MENTOR ----------
+// export const rejectMentor = async (req, res) => {
+//   try {
+//     const { mentorId } = req.params;
+//     const { reason } = req.body; // admin types reason
+//     const user = await User.findById(mentorId);
+//     if (!user || user.role !== "mentor") {
+//       return res.status(404).json({ message: "Mentor not found" });
+//     }
 
- 
-    if (user.mentorProfileHistory) {
-      user.mentorProfile = user.mentorProfileHistory;
-      user.mentorProfileHistory = null;
-    }
 
-    user.mentorProfile.status = "rejected";
-    await user.save();
+//     if (user.mentorProfileHistory) {
+//       user.mentorProfile = user.mentorProfileHistory;
+//       user.mentorProfileHistory = null;
+//     }
 
-    await sendMail({
-      to: user.email,
-      subject: "Mentor Profile Rejected",
-      html: `
-        <p>Unfortunately, your mentor profile update was rejected.</p>
-        <p><b>Reason:</b> ${reason}</p>
-        <p>Your previous approved profile has been restored. You may try updating again later.</p>
-      `
-    });
+//     user.mentorProfile.status = "rejected";
+//     await user.save();
 
-    res.json({ message: "Mentor profile rejected and rolled back", user });
-  } catch (e) {
-    res.status(500).json({ message: "Failed to reject mentor", error: e.message });
-  }
-};
+//     await sendMail({
+//       to: user.email,
+//       subject: "Mentor Profile Rejected",
+//       html: `
+//         <p>Unfortunately, your mentor profile update was rejected.</p>
+//         <p><b>Reason:</b> ${reason}</p>
+//         <p>Your previous approved profile has been restored. You may try updating again later.</p>
+//       `
+//     });
+
+//     res.json({ message: "Mentor profile rejected and rolled back", user });
+//   } catch (e) {
+//     res.status(500).json({ message: "Failed to reject mentor", error: e.message });
+//   }
+// };
 
 
 
@@ -458,6 +583,15 @@ export const updateProfile = async (req, res) => {
 
     await user.save();
     res.json({ message: "Profile updated successfully", user });
+
+    await auditLog(req, {
+      action: "profile.update",
+      targetType: "user",
+      targetId: user._id,
+      message: "Profile updated",
+      metadata: { role: user.role },
+    });
+
   } catch (e) {
     res.status(500).json({ message: "Failed to update profile", error: e.message });
   }
@@ -482,11 +616,19 @@ export const deleteAccount = async (req, res) => {
     await sendMail({
       to: user.email,
       subject: "EduBridge Account Deleted",
-      template: "accountDeleted", 
+      template: "accountDeleted",
       context: { name: user.name }
     });
 
     res.json({ message: "Account deleted successfully" });
+
+    await auditLog(req, {
+      action: "account.delete",
+      targetType: "user",
+      targetId: user._id,
+      message: "User account deleted (soft)",
+      severity: "medium",
+    });
   } catch (e) {
     res.status(500).json({ message: "Failed to delete account", error: e.message });
   }
@@ -506,6 +648,12 @@ export const logout = async (req, res) => {
     await user.save();
 
     res.json({ message: "Logged out successfully" });
+    await auditLog(req, {
+      action: "auth.logout",
+      targetType: "user",
+      targetId: user._id,
+      message: "User logged out",
+    });
   } catch (e) {
     res.status(500).json({ message: "Logout failed", error: e.message });
   }
@@ -530,6 +678,13 @@ export const refreshToken = async (req, res) => {
       );
 
       res.json({ accessToken: newAccessToken });
+
+      auditLog(req, {
+        action: "auth.refreshToken",
+        targetType: "user",
+        targetId: user._id,
+        message: "Access token refreshed",
+      });
     });
   } catch (e) {
     res.status(500).json({ message: "Failed to refresh token", error: e.message });

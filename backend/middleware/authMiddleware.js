@@ -27,3 +27,22 @@ export const requireRole = (...roles) => {
     next();
   };
 };
+
+export const requireAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
+};
+export const requireMentor = (req, res, next) => {
+  if (!req.user || req.user.role !== "mentor") {
+    return res.status(403).json({ message: "Mentor access required" });
+  }
+  next();
+};
+export const requireStudent = (req, res, next) => {
+  if (!req.user || req.user.role !== "student") {
+    return res.status(403).json({ message: "Student access required" });
+  }
+  next();
+}

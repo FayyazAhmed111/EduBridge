@@ -1,0 +1,112 @@
+[
+  {
+    "id": 1,
+    "title": "Global Undergraduate Exchange Program",
+    "provider": "U.S. Department of State",
+    "country": "United States",
+    "level": "Undergraduate",
+    "deadline": "2025-03-15",
+    "link": "https://example.com/global-ugrad",
+    "funding": "Fully Funded",
+    "field": "All Fields"
+  },
+  {
+    "id": 2,
+    "title": "Chevening Scholarships",
+    "provider": "UK Government",
+    "country": "United Kingdom",
+    "level": "Masters",
+    "deadline": "2025-11-01",
+    "link": "https://example.com/chevening",
+    "funding": "Fully Funded",
+    "field": "All Fields"
+  },
+  {
+    "id": 3,
+    "title": "DAAD Scholarships for Development",
+    "provider": "DAAD",
+    "country": "Germany",
+    "level": "Masters/PhD",
+    "deadline": "2025-07-31",
+    "link": "https://example.com/daad",
+    "funding": "Fully Funded",
+    "field": "Development Studies, Engineering"
+  },
+  {
+    "id": 4,
+    "title": "Fulbright Foreign Student Program",
+    "provider": "U.S. Government",
+    "country": "United States",
+    "level": "Masters/PhD",
+    "deadline": "2025-05-10",
+    "link": "https://example.com/fulbright",
+    "funding": "Fully Funded",
+    "field": "All Fields"
+  },
+  {
+    "id": 5,
+    "title": "Australia Awards Scholarships",
+    "provider": "Australian Government",
+    "country": "Australia",
+    "level": "Bachelors/Masters/PhD",
+    "deadline": "2025-04-30",
+    "link": "https://example.com/australia-awards",
+    "funding": "Fully Funded",
+    "field": "All Fields"
+  },
+  {
+    "id": 6,
+    "title": "Erasmus Mundus Joint Masters",
+    "provider": "European Union",
+    "country": "Europe",
+    "level": "Masters",
+    "deadline": "2025-02-20",
+    "link": "https://example.com/erasmus",
+    "funding": "Fully Funded",
+    "field": "All Fields"
+  },
+  {
+    "id": 7,
+    "title": "Gates Cambridge Scholarships",
+    "provider": "University of Cambridge",
+    "country": "United Kingdom",
+    "level": "Masters/PhD",
+    "deadline": "2025-12-15",
+    "link": "https://example.com/gates-cambridge",
+    "funding": "Fully Funded",
+    "field": "All Fields"
+  },
+  {
+    "id": 8,
+    "title": "Swiss Government Excellence Scholarships",
+    "provider": "Swiss Government",
+    "country": "Switzerland",
+    "level": "PhD/Postdoc",
+    "deadline": "2025-09-30",
+    "link": "https://example.com/swiss",
+    "funding": "Fully Funded",
+    "field": "All Fields"
+  },
+  {
+    "id": 9,
+    "title": "MEXT Scholarship Japan",
+    "provider": "Government of Japan",
+    "country": "Japan",
+    "level": "Bachelors/Masters/PhD",
+    "deadline": "2025-06-15",
+    "link": "https://example.com/mext",
+    "funding": "Fully Funded",
+    "field": "Science, Engineering, Arts"
+  },
+  {
+    "id": 10,
+    "title": "Commonwealth Scholarships",
+    "provider": "Commonwealth Secretariat",
+    "country": "UK/Commonwealth Countries",
+    "level": "Masters/PhD",
+    "deadline": "2025-10-01",
+    "link": "https://example.com/commonwealth",
+    "funding": "Fully Funded",
+    "field": "All Fields"
+  }
+]
