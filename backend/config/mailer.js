@@ -9,34 +9,43 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Setup transporter
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT || 587),
-  secure: false,
+  secure: Number(process.env.SMTP_PORT) === 465, 
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
+    pass: process.env.SMTP_PASS,
+  },
 });
 
-// DEBUG log to confirm
-console.log("📧 SMTP Config:", {
+// DEBUG log to confirm config
+console.log("SMTP Config:", {
   host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT,
   user: process.env.SMTP_USER,
-  from: process.env.SMTP_FROM
+  from: process.env.SMTP_FROM,
 });
 
-transporter.use("compile", hbs({
-  viewEngine: {
-    extname: ".hbs",
-    layoutsDir: path.join(__dirname, "..", "emails", "templates"),
-    defaultLayout: false,
-    partialsDir: path.join(__dirname, "..", "emails", "templates")
-  },
-  viewPath: path.join(__dirname, "..", "emails", "templates"),
-  extName: ".hbs"
-}));
+// Path to email templates
+const templatesDir = path.resolve(__dirname, "../emails/templates");
+console.log(" Templates Path:", templatesDir);
+
+// Attach handlebars
+transporter.use(
+  "compile",
+  hbs({
+    viewEngine: {
+      extname: ".hbs",
+      layoutsDir: templatesDir,
+      partialsDir: templatesDir,
+      defaultLayout: false,
+    },
+    viewPath: templatesDir,
+    extName: ".hbs",
+  })
+);
 
 export const sendMail = async ({ to, subject, html, template, context }) => {
   const from = process.env.SMTP_FROM || `"EduBridge" <no-reply@edubridge.app>`;
@@ -49,5 +58,12 @@ export const sendMail = async ({ to, subject, html, template, context }) => {
     mailOptions.html = html || "";
   }
 
-  return transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Email sent to ${to}: ${info.messageId}`);
+    return info;
+  } catch (err) {
+    console.error("❌ Email send error:", err.message);
+    throw err;
+  }
 };

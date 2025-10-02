@@ -6,6 +6,7 @@ import { sendMail } from "../config/mailer.js";
 import { auditLog } from "../services/auditService.js";
 import AuditLog from "../models/AuditLog.js";
 import { Parser } from "json2csv";
+import mongoose from "mongoose";
 
 // ---------------- USERS ----------------
 
@@ -211,10 +212,14 @@ export const notifyUsers = async (req, res) => {
       return res.status(400).json({ message: "No recipients provided" });
     }
 
+    // Split into emails and IDs
+    const emails = recipients.filter(r => r.includes("@"));
+    const ids = recipients.filter(r => mongoose.Types.ObjectId.isValid(r));
+
     const users = await User.find({
       $or: [
-        { email: { $in: recipients } },
-        { _id: { $in: recipients } }
+        ...(emails.length ? [{ email: { $in: emails } }] : []),
+        ...(ids.length ? [{ _id: { $in: ids } }] : [])
       ]
     });
 
@@ -245,7 +250,6 @@ export const notifyUsers = async (req, res) => {
     res.status(500).json({ message: "Failed to send notifications", error: e.message });
   }
 };
-
 // ---------------- AUDIT LOGS ----------------
 
 // Get all audit logs (with filters)

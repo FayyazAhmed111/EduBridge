@@ -1,11 +1,12 @@
 // services/auditService.js
 import AuditLog from "../models/AuditLog.js";
 
-// redact sensitive fields
+// Redact sensitive fields
 const redact = (obj) => {
   if (!obj || typeof obj !== "object") return obj;
   const clone = JSON.parse(JSON.stringify(obj));
-  const sensitiveKeys = ["password", "newPassword", "oldPassword", "token", "resetToken", "code"];
+  const sensitiveKeys = ["password", "newpassword", "oldpassword", "token", "resettoken", "code"];
+  
   const walk = (node) => {
     if (!node || typeof node !== "object") return;
     for (const k of Object.keys(node)) {
@@ -16,6 +17,7 @@ const redact = (obj) => {
       }
     }
   };
+  
   walk(clone);
   return clone;
 };
@@ -42,7 +44,7 @@ export const auditLog = async (req, payload = {}) => {
     const actorEmail = req?.user?.email ?? null;
 
     const ip =
-      req?.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
+      req?.headers?.["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
       req?.socket?.remoteAddress ||
       null;
 
@@ -53,8 +55,8 @@ export const auditLog = async (req, payload = {}) => {
       action,
       severity,
       outcome,
-      targetType,
-      targetId: targetId?.toString?.() ?? targetId,
+      targetType: targetType ?? null,
+      targetId: targetId ? targetId.toString() : null,
       ip,
       userAgent: req?.headers?.["user-agent"] ?? null,
       path: req?.originalUrl ?? null,
@@ -66,6 +68,6 @@ export const auditLog = async (req, payload = {}) => {
 
     await log.save();
   } catch (err) {
-    console.error("Audit log failed:", err.message);
+    console.error(" Audit log failed:", err.message);
   }
 };
