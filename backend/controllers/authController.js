@@ -60,7 +60,7 @@ export const login = async (req, res) => {
           html: `
             <p>Hello ${user.name},</p>
             <p>We detected multiple failed login attempts on your account.</p>
-            <p>🚨 Your account has been <b>temporarily suspended for 1 hour</b>.</p>
+            <p>Your account has been <b>temporarily suspended for 1 hour</b>.</p>
             <p>Please reset your password to unlock immediately:</p>
             <a href="${process.env.FRONTEND_URL}/forgot-password">Reset Password</a>
           `

@@ -24,6 +24,7 @@
     "nodemailer": "^7.0.6",
     "nodemailer-express-handlebars": "^7.0.0",
     "rate-limiter-flexible": "^8.0.1",
+    "socket.io": "^4.8.1",
     "useragent": "^2.3.0"
   },
   "devDependencies": {

@@ -296,7 +296,7 @@ export const suspendUser = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // 🚨 If target is ADMIN → require OTP
+    //  If target is ADMIN require OTP
     if (user.role === "admin") {
       if (!otp) return res.status(400).json({ message: "OTP required to suspend admin" });
 
@@ -316,12 +316,12 @@ export const suspendUser = async (req, res) => {
       await otpDoc.save();
     }
 
-    // ✅ Suspend indefinitely
+   
     user.isSuspended = true;
     user.suspendedUntil = null;
     await user.save();
 
-    // ✅ Build email body (reason optional)
+    
     let html = `
       <p>Hello ${user.name},</p>
       <p>Your EduBridge account has been suspended by an administrator.</p>
@@ -363,7 +363,7 @@ export const unsuspendUser = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // 🚨 Require OTP if target is admin
+    
     if (user.role === "admin") {
       if (!otp) return res.status(400).json({ message: "OTP required to unsuspend admin" });
 
@@ -391,7 +391,7 @@ export const unsuspendUser = async (req, res) => {
     await sendMail({
       to: user.email,
       subject: "EduBridge Account Unsuspended",
-      html: `<p>Hello ${user.name},</p><p>Your account has been reactivated by an administrator.</p>`
+      html: `<p>Hello ${user.name},</p><p>Your account has been reactivated by an administrator.</p><br><p>You can now access your account.</p>`
     });
 
     res.json({ message: "User unsuspended successfully", user });
