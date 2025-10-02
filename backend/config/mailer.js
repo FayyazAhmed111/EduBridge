@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT || 587),
-  secure: Number(process.env.SMTP_PORT) === 465, 
+  secure: Number(process.env.SMTP_PORT) === 465, // true only if using 465
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -21,16 +21,16 @@ const transporter = nodemailer.createTransport({
 });
 
 // DEBUG log to confirm config
-console.log("SMTP Config:", {
+console.log("📧 SMTP Config:", {
   host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT,
   user: process.env.SMTP_USER,
   from: process.env.SMTP_FROM,
 });
 
-// Path to email templates
-const templatesDir = path.resolve(__dirname, "../emails/templates");
-console.log(" Templates Path:", templatesDir);
+// Path to email templates (directly inside /emails)
+const templatesDir = path.resolve(__dirname, "../emails");
+console.log("📂 Templates Path:", templatesDir);
 
 // Attach handlebars
 transporter.use(
