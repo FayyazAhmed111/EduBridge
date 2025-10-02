@@ -11,6 +11,14 @@ export const requireAuth = async (req, res, next) => {
     const user = await User.findById(payload.id);
     if (!user) return res.status(401).json({ message: "User not found" });
 
+    // honor soft-deleted & suspended
+    if (user.isDeleted) return res.status(403).json({ message: "Account is deleted" });
+    if (user.isSuspended && user.suspendedUntil && user.suspendedUntil > new Date()) {
+      return res.status(403).json({
+        message: "Your account is suspended. Please contact support or reset your password."
+      });
+    }
+
     req.user = user;
     next();
   } catch (e) {
@@ -28,21 +36,5 @@ export const requireRole = (...roles) => {
   };
 };
 
-export const requireAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== "admin") {
-    return res.status(403).json({ message: "Admin access required" });
-  }
-  next();
-};
-export const requireMentor = (req, res, next) => {
-  if (!req.user || req.user.role !== "mentor") {
-    return res.status(403).json({ message: "Mentor access required" });
-  }
-  next();
-};
-export const requireStudent = (req, res, next) => {
-  if (!req.user || req.user.role !== "student") {
-    return res.status(403).json({ message: "Student access required" });
-  }
-  next();
-}
+// If you prefer an explicit helper:
+export const requireAdmin = (req, res, next) => requireRole("admin")(req, res, next);

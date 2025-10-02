@@ -13,10 +13,19 @@ const hash = async (plain) => await bcrypt.hash(plain, 10);
 const compare = async (plain, hashv) => await bcrypt.compare(plain, hashv);
 
 const makeAccessToken = (user) =>
-  jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" });
+  jwt.sign(
+    { id: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES || "15m" }
+  );
 
 const makeRefreshToken = (user) =>
-  jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: "7d" });
+  jwt.sign(
+    { id: user._id },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRES || "7d" }
+  );
+ 
 
 // ---------- LOGIN ----------
 export const login = async (req, res) => {

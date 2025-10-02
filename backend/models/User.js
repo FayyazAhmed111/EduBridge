@@ -47,7 +47,6 @@ const StudentProfileSchema = new mongoose.Schema({
   termsAccepted: { type: Boolean, default: false }
 }, { _id: false });
 
-// Main User schema
 const UserSchema = new mongoose.Schema({
   role: { type: String, enum: ["admin", "mentor", "student"], required: true },
   name: { type: String, required: true },
@@ -58,18 +57,21 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   profilePhoto: String,
 
-  // Auth-related fields
+  // Auth / control flags
   refreshTokens: [{ type: String }],
   isVerified: { type: Boolean, default: false },
+
   failedLoginAttempts: { type: Number, default: 0 },
-  suspendedUntil: { type: Date, default: null },
   isSuspended: { type: Boolean, default: false },
-  isDeleted: { type: Boolean, default: false },   
-  deletedAt: { type: Date },                      
+  suspendedUntil: { type: Date, default: null },
+
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date },
+
+  // Profiles
   mentorProfile: MentorProfileSchema,
   mentorProfileHistory: MentorProfileSchema,
   studentProfile: StudentProfileSchema
-  
 }, { timestamps: true });
 
 export default mongoose.model("User", UserSchema);

@@ -1,40 +1,53 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import nodemailer from "nodemailer";
 import hbs from "nodemailer-express-handlebars";
 import path from "path";
 import { fileURLToPath } from "url";
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: false,
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  }
 });
 
+// DEBUG log to confirm
+console.log("📧 SMTP Config:", {
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  user: process.env.SMTP_USER,
+  from: process.env.SMTP_FROM
+});
 
-const handlebarOptions = {
+transporter.use("compile", hbs({
   viewEngine: {
-    extName: ".hbs",
-    partialsDir: path.resolve(__dirname, "../emails"),
+    extname: ".hbs",
+    layoutsDir: path.join(__dirname, "..", "emails", "templates"),
     defaultLayout: false,
+    partialsDir: path.join(__dirname, "..", "emails", "templates")
   },
-  viewPath: path.resolve(__dirname, "../emails"),
-  extName: ".hbs",
-};
+  viewPath: path.join(__dirname, "..", "emails", "templates"),
+  extName: ".hbs"
+}));
 
-transporter.use("compile", hbs(handlebarOptions));
+export const sendMail = async ({ to, subject, html, template, context }) => {
+  const from = process.env.SMTP_FROM || `"EduBridge" <no-reply@edubridge.app>`;
+  const mailOptions = { from, to, subject };
 
-export const sendMail = async ({ to, subject, template, context, html }) => {
-  return transporter.sendMail({
-    from: `"EduBridge" <${process.env.MAIL_USER}>`,
-    to,
-    subject,
-    ...(template
-      ? { template, context } 
-      : { html }),            
-  });
+  if (template) {
+    mailOptions.template = template;
+    mailOptions.context = context || {};
+  } else {
+    mailOptions.html = html || "";
+  }
+
+  return transporter.sendMail(mailOptions);
 };
