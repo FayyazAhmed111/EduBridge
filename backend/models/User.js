@@ -44,9 +44,25 @@ const StudentProfileSchema = new mongoose.Schema({
   fieldOfStudy: String,
   gpa: String,
   studentIdUrl: String,
-  termsAccepted: { type: Boolean, default: false }
+  termsAccepted: { type: Boolean, default: false },
+
+  // NEW fields
+  educationHistory: [
+    {
+      institution: String,
+      degree: String,
+      fieldOfStudy: String,
+      startYear: Number,
+      endYear: Number,
+      gpa: String
+    }
+  ],
+  interests: [String], // e.g. ["AI", "Healthcare", "Economics"]
+  preferredStudyDestinations: [String], // e.g. ["USA", "UK", "Germany"]
+  careerGoals: String // Free text: "I want to become a data scientist"
 }, { _id: false });
 
+// Main User schema
 const UserSchema = new mongoose.Schema({
   role: { type: String, enum: ["admin", "mentor", "student"], required: true },
   name: { type: String, required: true },
