@@ -7,7 +7,7 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
@@ -37,6 +37,17 @@ const Navbar = () => {
     localStorage.removeItem("profilePhoto");
     setIsLoggedIn(false);
     navigate("/");
+  };
+
+  // 🔄 Dev toggle
+  const handleDevToggle = () => {
+    const newState = !isLoggedIn;
+    setIsLoggedIn(newState);
+    localStorage.setItem("isLoggedIn", newState.toString());
+    if (newState) {
+      localStorage.setItem("profilePhoto", ""); // optional
+    }
+    setMenuOpen(false); // close mobile menu if open
   };
 
   const linkClass = ({ isActive }) =>
@@ -148,6 +159,13 @@ const Navbar = () => {
                 >
                   Register
                 </button>
+                {/* 🛠 Dev Toggle Button (Desktop) */}
+                <button
+                  onClick={handleDevToggle}
+                  className="px-3 py-1.5 bg-gray-300 text-xs rounded-full font-medium hover:bg-gray-400 transition"
+                >
+                  Dev
+                </button>
               </>
             )}
           </div>
@@ -164,7 +182,9 @@ const Navbar = () => {
         {/* Mobile Menu */}
         <div
           className={`md:hidden absolute top-full left-0 w-full bg-white border-t shadow-md transition-all duration-300 ${
-            menuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+            menuOpen
+              ? "max-h-screen opacity-100"
+              : "max-h-0 opacity-0 overflow-hidden"
           }`}
         >
           <div className="flex flex-col space-y-3 px-6 py-4">
@@ -255,6 +275,13 @@ const Navbar = () => {
                     className="w-full px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition"
                   >
                     Register
+                  </button>
+                  {/* 🛠 Dev Toggle Button (Mobile) */}
+                  <button
+                    onClick={handleDevToggle}
+                    className="w-full px-4 py-2 bg-gray-300 text-sm rounded-full font-medium hover:bg-gray-400 transition"
+                  >
+                    Dev
                   </button>
                 </>
               )}
