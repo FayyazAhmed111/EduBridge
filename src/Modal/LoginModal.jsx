@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import Config from "../Constants/Config";
 
 const LoginModal = ({ isOpen, onClose, onSwitch }) => {
   const [email, setEmail] = useState("");
@@ -15,16 +16,52 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
     "admin@uni.edu": "any",
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
 
-    if (demoAccounts[email] && password) {
+  //   if (demoAccounts[email] && password) {
+  //     localStorage.setItem("isLoggedIn", "true");
+  //     localStorage.setItem("userEmail", email);
+  //     navigate("/dashboard");
+  //     onClose();
+  //   } else {
+  //     setError("⚠️ Invalid email or password");
+  //   }
+  // };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      return setError("⚠️ Please enter both email and password");
+    }
+
+    try {
+      const res = await fetch(`${Config.API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Invalid credentials");
+      }
+
+      // Save tokens and user in localStorage
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+      localStorage.setItem("userEmail", data.user.email);
+      localStorage.setItem("userName", data.user.name);
+      localStorage.setItem("userRole", data.user.role);
       localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userEmail", email);
-      navigate("/dashboard");
+
       onClose();
-    } else {
-      setError("⚠️ Invalid email or password");
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Login Error:", err);
+      setError(err.message);
     }
   };
 
@@ -45,7 +82,7 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
             className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative"
           >
             <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+              className="cursor-pointer absolute top-4 right-4 text-gray-400 hover:text-gray-700"
               onClick={onClose}
             >
               ✕
@@ -100,7 +137,7 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:opacity-90 transition"
+                className="cursor-pointer w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:opacity-90 transition"
               >
                 Sign In
               </button>
@@ -120,7 +157,7 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
                   onClose();
                   onSwitch && onSwitch("register");
                 }}
-                className="text-indigo-600 hover:underline font-medium"
+                className="cursor-pointer text-indigo-600 hover:underline font-medium"
               >
                 Create an account
               </button>

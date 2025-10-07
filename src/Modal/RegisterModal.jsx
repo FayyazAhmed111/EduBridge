@@ -1,25 +1,55 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import Config from "../Constants/Config";
 
 const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accountType, setAccountType] = useState("student");
+  const [level, setLevel] = useState(""); // for student
+  const [occupation, setOccupation] = useState(""); // for mentor
+  const [organization, setOrganization] = useState(""); // for mentor
+  const [highestEducation, setHighestEducation] = useState(""); // for mentor
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    // fake registration in localStorage
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("userEmail", email);
-    localStorage.setItem("userName", fullName);
-    localStorage.setItem("accountType", accountType);
+    try {
+      const url =
+        accountType === "student"
+          ? `${Config.API_BASE_URL}/api/auth/register/student`
+          : `${Config.API_BASE_URL}/api/auth/register/mentor`;
 
-    onClose();
-    navigate("/dashboard");
+      const body =
+        accountType === "student"
+          ? { name: fullName, email, password, level }
+          : { name: fullName, email, password, occupation, organization, highestEducation };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Registration failed");
+
+      alert(data.message || "Account created! Check your email for verification.");
+      onClose();
+      navigate("/");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,7 +70,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
           >
             {/* Close */}
             <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+              className="cursor-pointer absolute top-4 right-4 text-gray-400 hover:text-gray-700"
               onClick={onClose}
             >
               ✕
@@ -58,6 +88,10 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
                 Join EduBridge and unlock new opportunities
               </p>
             </div>
+
+            {error && (
+              <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+            )}
 
             {/* Form */}
             <form className="space-y-5" onSubmit={handleSubmit}>
@@ -103,6 +137,71 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
                 />
               </div>
 
+              {/* Student-specific field */}
+              {accountType === "student" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Education Level
+                  </label>
+                  <select
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 text-sm transition"
+                    value={level}
+                    onChange={(e) => setLevel(e.target.value)}
+                    required
+                  >
+                    <option value="">Select level</option>
+                    <option value="High School">High School</option>
+                    <option value="College">College</option>
+                    <option value="University">University</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Mentor-specific fields */}
+              {accountType === "mentor" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Occupation
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Software Engineer"
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 text-sm transition"
+                      value={occupation}
+                      onChange={(e) => setOccupation(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Organization
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Google, University of XYZ..."
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 text-sm transition"
+                      value={organization}
+                      onChange={(e) => setOrganization(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Highest Education
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Master's in Computer Science"
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 text-sm transition"
+                      value={highestEducation}
+                      onChange={(e) => setHighestEducation(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Account Type
@@ -135,9 +234,10 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:opacity-90 transition"
+                disabled={loading}
+                className="cursor-pointer w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:opacity-90 transition"
               >
-                Create Account
+                {loading ? "Creating..." : "Create Account"}
               </button>
             </form>
 
@@ -150,7 +250,7 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
                   onClose();
                   onSwitch && onSwitch("login");
                 }}
-                className="text-indigo-600 font-medium hover:underline"
+                className="cursor-pointer text-indigo-600 font-medium hover:underline"
               >
                 Sign in here
               </button>

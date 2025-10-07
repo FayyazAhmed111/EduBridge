@@ -35,9 +35,18 @@ const Navbar = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("userEmail");
     localStorage.removeItem("profilePhoto");
+    // localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+
     setIsLoggedIn(false);
+    setProfilePhoto(null);
+    setDropdownOpen(false);
+    setMenuOpen(false);
+
     navigate("/");
+    window.location.reload();
   };
+
 
   // 🔄 Dev toggle
   const handleDevToggle = () => {
@@ -72,8 +81,8 @@ const Navbar = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b shadow-sm">
-        <div className="flex justify-between items-center px-6 sm:px-10 py-3">
+      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md  shadow-sm">
+        <div className="flex justify-between items-center px-6 sm:px-10 py-5.5">
           {/* Logo */}
           <h1
             className="text-lg sm:text-xl font-bold flex items-center space-x-2 cursor-pointer"
@@ -126,19 +135,19 @@ const Navbar = () => {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                 />
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-md py-2">
+                  <div className="absolute right-[15px] top-8 mt-2 w-40 bg-white border rounded-lg shadow-md py-2">
                     <button
                       onClick={() => {
                         navigate("/profile");
                         setDropdownOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                      className="cursor-pointer w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
                     >
                       Profile
                     </button>
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      className="cursor-pointer w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                     >
                       Logout
                     </button>
@@ -149,23 +158,23 @@ const Navbar = () => {
               <>
                 <button
                   onClick={() => setShowLogin(true)}
-                  className="px-4 py-1.5 border rounded-full text-sm font-medium hover:bg-gray-100 transition"
+                    className="cursor-pointer px-4 py-1.5 border rounded-full text-sm font-medium hover:bg-gray-100 transition"
                 >
                   Login
                 </button>
                 <button
                   onClick={() => setShowRegister(true)}
-                  className="px-4 py-1.5 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition"
+                    className="cursor-pointer px-4 py-1.5 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition"
                 >
                   Register
                 </button>
                 {/* 🛠 Dev Toggle Button (Desktop) */}
-                <button
+                  {/* <button
                   onClick={handleDevToggle}
-                  className="px-3 py-1.5 bg-gray-300 text-xs rounded-full font-medium hover:bg-gray-400 transition"
+                    className=" cursor-pointer px-3 py-1.5 bg-gray-300 text-xs rounded-full font-medium hover:bg-gray-400 transition"
                 >
                   Dev
-                </button>
+                </button> */}
               </>
             )}
           </div>
@@ -173,7 +182,7 @@ const Navbar = () => {
           {/* Hamburger Menu (Mobile) */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden flex items-center justify-center w-9 h-9 border rounded-lg"
+            className="md:hidden cursor-pointer flex items-center justify-center w-9 h-9 border rounded-lg"
           >
             {menuOpen ? "✖" : "☰"}
           </button>
@@ -263,7 +272,7 @@ const Navbar = () => {
                       setMenuOpen(false);
                       setShowLogin(true);
                     }}
-                    className="w-full px-4 py-2 border rounded-full text-sm font-medium hover:bg-gray-100 mb-2 transition"
+                      className="cursor-pointer w-full px-4 py-2 border rounded-full text-sm font-medium hover:bg-gray-100 mb-2 transition"
                   >
                     Login
                   </button>
@@ -272,17 +281,17 @@ const Navbar = () => {
                       setMenuOpen(false);
                       setShowRegister(true);
                     }}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition"
+                      className="cursor-pointer w-full px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition"
                   >
                     Register
                   </button>
                   {/* 🛠 Dev Toggle Button (Mobile) */}
-                  <button
+                    {/* <button
                     onClick={handleDevToggle}
-                    className="w-full px-4 py-2 bg-gray-300 text-sm rounded-full font-medium hover:bg-gray-400 transition"
+                      className="cursor-pointer w-full px-4 py-2 bg-gray-300 text-sm rounded-full font-medium hover:bg-gray-400 transition"
                   >
                     Dev
-                  </button>
+                  </button> */}
                 </>
               )}
             </div>
