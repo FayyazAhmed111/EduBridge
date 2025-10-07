@@ -1,17 +1,20 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import Config from "../Constants/Config";
+import {
+  registerStudent,
+  registerMentor,
+} from "../services/authApi";
 
 const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accountType, setAccountType] = useState("student");
-  const [level, setLevel] = useState(""); // for student
-  const [occupation, setOccupation] = useState(""); // for mentor
-  const [organization, setOrganization] = useState(""); // for mentor
-  const [highestEducation, setHighestEducation] = useState(""); // for mentor
+  const [level, setLevel] = useState("");
+  const [occupation, setOccupation] = useState("");
+  const [organization, setOrganization] = useState("");
+  const [highestEducation, setHighestEducation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -22,25 +25,15 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
     setError("");
 
     try {
-      const url =
-        accountType === "student"
-          ? `${Config.API_BASE_URL}/api/auth/register/student`
-          : `${Config.API_BASE_URL}/api/auth/register/mentor`;
-
       const body =
         accountType === "student"
           ? { name: fullName, email, password, level }
           : { name: fullName, email, password, occupation, organization, highestEducation };
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || "Registration failed");
+      const data =
+        accountType === "student"
+          ? await registerStudent(body)
+          : await registerMentor(body);
 
       alert(data.message || "Account created! Check your email for verification.");
       onClose();
@@ -68,7 +61,6 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
             transition={{ duration: 0.3 }}
             className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative"
           >
-            {/* Close */}
             <button
               className="cursor-pointer absolute top-4 right-4 text-gray-400 hover:text-gray-700"
               onClick={onClose}
@@ -76,7 +68,6 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
               ✕
             </button>
 
-            {/* Logo + Title */}
             <div className="text-center mb-6">
               <div className="w-14 h-14 mx-auto flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-2xl font-bold shadow-md">
                 🎓
@@ -93,7 +84,6 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
               <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
             )}
 
-            {/* Form */}
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -137,7 +127,6 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
                 />
               </div>
 
-              {/* Student-specific field */}
               {accountType === "student" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -157,7 +146,6 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
                 </div>
               )}
 
-              {/* Mentor-specific fields */}
               {accountType === "mentor" && (
                 <>
                   <div>
@@ -241,7 +229,6 @@ const RegisterModal = ({ isOpen, onClose, onSwitch }) => {
               </button>
             </form>
 
-            {/* Switch to Login */}
             <p className="text-sm text-gray-600 mt-6 text-center">
               Already have an account?{" "}
               <button

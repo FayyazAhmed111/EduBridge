@@ -532,7 +532,7 @@ export default function LandingPage() {
                   key={index}
                   whileHover={{ scale: 1.05 }}
                   onClick={() => setActiveCategory(category)}
-                  className={`px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 ${activeCategory === category
+                  className={`cursor-pointer px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 ${activeCategory === category
                     ? "bg-blue-600 text-white "
                     : "bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-400 "
                     }`}

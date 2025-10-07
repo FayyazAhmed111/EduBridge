@@ -512,7 +512,7 @@ import { Calendar, MapPin, GraduationCap, Building2, Search } from "lucide-react
 import { motion } from "framer-motion";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
-import { fetchScholarships } from "../services/scholarshipService";
+import { getAllScholarships } from "../services/scholarshipApi";
 
 export default function ScholarshipsPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -524,29 +524,34 @@ export default function ScholarshipsPage() {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
     setIsLoggedIn(loggedIn);
 
-    if (loggedIn) {
-      const loadData = async () => {
-        setLoading(true);
-        const data = await fetchScholarships();
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const data = await getAllScholarships();
         setScholarships(data);
+      } catch (err) {
+        console.error(err);
+        setScholarships([]);
+      } finally {
         setLoading(false);
-      };
-      loadData();
-    } else {
-      setLoading(false);
-    }
+      }
+    };
+
+    if (loggedIn) loadData();
+    else setLoading(false);
   }, []);
 
-  const filteredScholarships = scholarships.filter((search) => {
+  // 🔍 Manual frontend-only search filter
+  const filteredScholarships = scholarships.filter((scholarship) => {
     if (!searchQuery.trim()) return true;
     const hay = `
-      ${search.name || ""}
-      ${search.title || ""}
-      ${search.organization || ""}
-      ${search.country || ""}
-      ${search.level || ""}
-      ${search.type || ""}
-      ${search.eligibility || ""}
+      ${scholarship.name || ""}
+      ${scholarship.field || ""}
+      ${scholarship.level || ""}
+      ${scholarship.type || ""}
+      ${scholarship.country || ""}
+      ${scholarship.organization || ""}
+      ${scholarship.eligibility || ""}
     `.toLowerCase();
     return hay.includes(searchQuery.toLowerCase());
   });
@@ -573,11 +578,11 @@ export default function ScholarshipsPage() {
 
       {/* SEARCH BAR */}
       <div className="max-w-4xl mx-auto px-6 py-2 -mt-10 relative z-10">
-        <div className="bg-white shadow-md rounded-xl w-fit md:w-xl flex items-center gap-3 px-5 py-3" >
+        <div className="bg-white shadow-md rounded-xl w-fit md:w-xl flex items-center gap-3 px-5 py-3">
           <Search className="text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search scholarships (e.g., Canada, Fully Funded, Computer Science)"
+            placeholder="Search scholarships (e.g., Private, Canada, Engineering)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1 py-2 outline-none text-sm text-gray-700"
@@ -592,7 +597,7 @@ export default function ScholarshipsPage() {
             Loading scholarships...
           </div>
         ) : !isLoggedIn ? (
-          <div className="flex justify-center items-center py-32">
+            <div className="flex justify-center items-center py-10">
             <div className="bg-white/90 px-8 py-6 rounded-xl shadow text-center border">
               <p className="text-lg font-semibold text-gray-700 mb-2">
                 🔒 Please login to view scholarships
@@ -608,68 +613,68 @@ export default function ScholarshipsPage() {
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredScholarships.map((s) => (
+                  {filteredScholarships.map((scholarship) => (
               <motion.div
-                key={s.id}
+                key={scholarship.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="group bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-200 flex flex-col hover:shadow-2xl transition-shadow duration-500"
               >
                 <div className="relative w-full h-56 overflow-hidden">
                   <img
-                    src={s.image || dummyImage}
-                    alt={s.name}
+                    src={scholarship.image || dummyImage}
+                    alt={scholarship.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
                   <div className="absolute top-5 right-5">
                     <span
-                      className={`inline-block px-3 py-1.5 rounded-lg text-xs font-bold backdrop-blur-md shadow-md ${s.type === "Fully Funded"
+                      className={`inline-block px-3 py-1.5 rounded-lg text-xs font-bold backdrop-blur-md shadow-md ${scholarship.type === "Fully Funded"
                         ? "bg-green-500/90 text-white"
                         : "bg-amber-500/90 text-white"
                         }`}
                     >
-                      {s.type}
+                      {scholarship.type}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex-1 flex flex-col justify-between p-6">
                   <h2 className="text-xl font-bold text-slate-900 mb-1">
-                    {s.name}
+                    {scholarship.name}
                   </h2>
 
                   <p className="text-slate-600 text-sm mb-4 line-clamp-3">
-                    {s.eligibility}
+                    {scholarship.eligibility}
                   </p>
 
                   <div className="flex flex-wrap gap-4 text-sm mb-4 pb-3 border-b border-slate-200">
                     <div className="flex items-center gap-2 text-slate-700">
                       <GraduationCap className="w-4 h-4 text-indigo-600" />
-                      <span>{s.level}</span>
+                      <span>{scholarship.level}</span>
                     </div>
                     <div className="flex items-center gap-2 text-slate-700">
                       <MapPin className="w-4 h-4 text-blue-600" />
-                      <span>{s.country}</span>
+                      <span>{scholarship.country}</span>
                     </div>
                     <div className="flex items-center gap-2 text-slate-700">
                       <Calendar className="w-4 h-4 text-red-600" />
-                      <span>{s.deadline}</span>
+                      <span>{scholarship.deadline}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between mt-auto">
                     <div className="flex items-center gap-2 text-sm text-slate-500">
                       <Building2 className="w-4 h-4 text-green-600" />
-                      <span>{s.organization}</span>
+                      <span>{scholarship.organization}</span>
                     </div>
                     <span className="font-semibold text-blue-700">
-                      {s.amount}
+                      {scholarship.amount}
                     </span>
                   </div>
 
                   <a
-                    href={s.link}
+                    href={scholarship.link}
                     className="cursor-pointer mt-6 inline-flex items-center justify-center gap-2 bg-blue-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
                   >
                     Apply Now

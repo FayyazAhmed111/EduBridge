@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import Config from "../Constants/Config";
+import { login } from "../services/authApi";
 
 const LoginModal = ({ isOpen, onClose, onSwitch }) => {
   const [email, setEmail] = useState("");
@@ -9,25 +9,6 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // demo accounts
-  const demoAccounts = {
-    "student@uni.edu": "any",
-    "mentor@uni.edu": "any",
-    "admin@uni.edu": "any",
-  };
-
-  // const handleSubmit = (e) => {
-  //   e.preventDefault();
-
-  //   if (demoAccounts[email] && password) {
-  //     localStorage.setItem("isLoggedIn", "true");
-  //     localStorage.setItem("userEmail", email);
-  //     navigate("/dashboard");
-  //     onClose();
-  //   } else {
-  //     setError("⚠️ Invalid email or password");
-  //   }
-  // };
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -37,19 +18,9 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
     }
 
     try {
-      const res = await fetch(`${Config.API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const data = await login(email, password);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Invalid credentials");
-      }
-
-      // Save tokens and user in localStorage
+      // Save tokens and user info in localStorage
       localStorage.setItem("accessToken", data.accessToken);
       localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("userEmail", data.user.email);
@@ -92,7 +63,9 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
               <div className="w-14 h-14 mx-auto flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-2xl font-bold shadow-md">
                 🎓
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mt-4">Welcome Back</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mt-4">
+                Welcome Back
+              </h1>
               <p className="text-sm text-gray-500">
                 Sign in to continue your EduBridge journey
               </p>
