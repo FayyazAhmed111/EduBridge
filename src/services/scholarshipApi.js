@@ -1,87 +1,48 @@
+import axios from "axios";
 import Config from "../Constants/Config";
 
-/* ============================================================
-   GET ALL SCHOLARSHIPS
-   ============================================================ */
+const API_URL = `${Config.API_BASE_URL}/api/scholarships`;
+
+// ---------- GET ALL ----------
 export const getAllScholarships = async () => {
   try {
-    const token = localStorage.getItem("accessToken"); 
-
-    const res = await fetch(`${Config.API_BASE_URL}/api/scholarships`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
+    const token = localStorage.getItem("accessToken");
+    const res = await axios.get(`${API_URL}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch scholarships");
-    }
-
-    const data = await res.json();
-    return data.items || data;
-  } catch (err) {
-    console.error("Error fetching scholarships:", err);
-    throw err;
+    return res.data.items || res.data;
+  } catch (error) {
+    console.error("Error fetching scholarships:", error);
+    throw error.response?.data || { message: "Failed to fetch scholarships" };
   }
 };
 
-/* ============================================================
-   SEARCH SCHOLARSHIPS
-   ============================================================ */
+// ---------- SEARCH ----------
 export const searchScholarships = async (query = "") => {
   try {
     const url = query
-      ? `${Config.API_BASE_URL}/api/scholarships/search?q=${encodeURIComponent(
-          query
-        )}`
-      : `${Config.API_BASE_URL}/api/scholarships/search`;
-
-    const res = await fetch(url, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-
-    if (!res.ok) {
-      throw new Error("Search request failed");
-    }
-
-    const data = await res.json();
-    return data.items || [];
-  } catch (err) {
-    console.error("Error searching scholarships:", err);
-    throw err;
+      ? `${API_URL}/search?q=${encodeURIComponent(query)}`
+      : `${API_URL}/search`;
+    const res = await axios.get(url);
+    return res.data.items || [];
+  } catch (error) {
+    console.error("Error searching scholarships:", error);
+    throw error.response?.data || { message: "Search request failed" };
   }
 };
 
-/* ============================================================
-   GET SUGGESTED SCHOLARSHIPS (FOR STUDENTS)
-   ============================================================ */
+// ---------- SUGGESTED (Students) ----------
 export const getSuggestedScholarships = async () => {
   try {
-    const token = localStorage.getItem("refreshToken");
+    const token = localStorage.getItem("accessToken");
     if (!token) throw new Error("Not authenticated");
 
-    const res = await fetch(
-      `${Config.API_BASE_URL}/api/scholarships/suggested`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch suggested scholarships");
-    }
-
-    const data = await res.json();
-    return data.items || [];
-  } catch (err) {
-    console.error("Error loading suggested scholarships:", err);
-    throw err;
+    const res = await axios.get(`${API_URL}/suggested`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.items || [];
+  } catch (error) {
+    console.error("Error fetching suggested scholarships:", error);
+    throw error.response?.data || { message: "Failed to fetch suggestions" };
   }
 };

@@ -25,6 +25,8 @@ import Scholarships from "../src/admin/pages/Scholarships";
 import Testimonials from "../src/admin/pages/Testimonial";
 import Settings from "../src/admin/pages/Settings";
 import VerifyEmail from "./Pages/VerifyEmail";
+import ResetPassword from "./Pages/ResetPassword";
+import Profile from "./Pages/Profile";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -48,9 +50,11 @@ function App() {
         <Route path="/forgetpassword" element={<ForgetPassword />} />
         <Route path="/contactus" element={<ContactPage />} />
         <Route path="/courses" element={<CoursesPage />} />
+        <Route path="/profile" element={<Profile />} />
 
         {/* verify email */}
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* admin routes */}
         <Route
