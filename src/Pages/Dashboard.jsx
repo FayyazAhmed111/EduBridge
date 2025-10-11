@@ -175,14 +175,8 @@ const Dashboard = () => {
       </header>
 
       {/* Sections */}
-      <motion.main
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={{
-          hidden: { opacity: 0 },
-          visible: { opacity: 1, transition: { staggerChildren: 0.15 } },
-        }}
+      <main
+
         className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 flex-grow"
       >
         {sections.map((s) => (
@@ -215,7 +209,7 @@ const Dashboard = () => {
 
           </motion.a>
         ))}
-      </motion.main>
+      </main>
 
       {/* Footer */}
       <footer className="bg-gradient-to-r from-gray-900 to-gray-800 text-gray-400 text-center text-sm py-6 mt-auto border-t border-gray-700">

@@ -107,6 +107,7 @@ const Profile = () => {
 
                     {/* Profile Info Form */}
                     <form onSubmit={handleUpdate} className="space-y-5 mb-8">
+                        {/* Common Fields */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -134,57 +135,181 @@ const Profile = () => {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <input
+                                type="tel"
+                                placeholder="Phone Number"
+                                value={user?.phone || ""}
+                                onChange={(e) => setUser({ ...user, phone: e.target.value })}
+                                className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm transition"
+                            />
+
+                            {/* ✅ DOB fix — always formats correctly */}
+                            <input
+                                type="date"
+                                value={
+                                    user?.dob
+                                        ? new Date(user.dob).toISOString().substring(0, 10)
+                                        : ""
+                                }
+                                onChange={(e) => setUser({ ...user, dob: e.target.value })}
+                                className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm transition"
+                            />
+
+                            {/* ✅ Gender fix — normalizes capitalization */}
+                            <select
+                                value={
+                                    user?.gender
+                                        ? user.gender.charAt(0).toUpperCase() +
+                                        user.gender.slice(1).toLowerCase()
+                                        : ""
+                                }
+                                onChange={(e) => setUser({ ...user, gender: e.target.value })}
+                                className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm transition"
+                            >
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        {/* Role-specific sections (Student / Mentor) */}
                         {user?.role === "student" && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Education Level
-                                </label>
-                                <input
-                                    type="text"
-                                    value={user?.level || ""}
-                                    onChange={(e) => setUser({ ...user, level: e.target.value })}
-                                    className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition"
+                            <>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Institution"
+                                        value={user?.studentProfile?.institution || ""}
+                                        onChange={(e) =>
+                                            setUser({
+                                                ...user,
+                                                studentProfile: {
+                                                    ...user.studentProfile,
+                                                    institution: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Field of Study"
+                                        value={user?.studentProfile?.fieldOfStudy || ""}
+                                        onChange={(e) =>
+                                            setUser({
+                                                ...user,
+                                                studentProfile: {
+                                                    ...user.studentProfile,
+                                                    fieldOfStudy: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <input
+                                        type="text"
+                                        placeholder="GPA"
+                                        value={user?.studentProfile?.gpa || ""}
+                                        onChange={(e) =>
+                                            setUser({
+                                                ...user,
+                                                studentProfile: {
+                                                    ...user.studentProfile,
+                                                    gpa: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                                    />
+                                    <input
+                                        type="url"
+                                        placeholder="Student ID URL"
+                                        value={user?.studentProfile?.studentIdUrl || ""}
+                                        onChange={(e) =>
+                                            setUser({
+                                                ...user,
+                                                studentProfile: {
+                                                    ...user.studentProfile,
+                                                    studentIdUrl: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                                    />
+                                </div>
+
+                                <textarea
+                                    placeholder="Career Goals"
+                                    value={user?.studentProfile?.careerGoals || ""}
+                                    onChange={(e) =>
+                                        setUser({
+                                            ...user,
+                                            studentProfile: {
+                                                ...user.studentProfile,
+                                                careerGoals: e.target.value,
+                                            },
+                                        })
+                                    }
+                                    className="w-full px-4 py-2.5 min-h-[80px] border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
                                 />
-                            </div>
+                            </>
                         )}
 
                         {user?.role === "mentor" && (
                             <>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Occupation
-                                    </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <input
                                         type="text"
-                                        value={user?.occupation || ""}
-                                        onChange={(e) => setUser({ ...user, occupation: e.target.value })}
-                                        className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition"
+                                        placeholder="Occupation"
+                                        value={user?.mentorProfile?.occupation || ""}
+                                        onChange={(e) =>
+                                            setUser({
+                                                ...user,
+                                                mentorProfile: {
+                                                    ...user.mentorProfile,
+                                                    occupation: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Organization"
+                                        value={user?.mentorProfile?.organization || ""}
+                                        onChange={(e) =>
+                                            setUser({
+                                                ...user,
+                                                mentorProfile: {
+                                                    ...user.mentorProfile,
+                                                    organization: e.target.value,
+                                                },
+                                            })
+                                        }
+                                        className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Organization
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={user?.organization || ""}
-                                        onChange={(e) => setUser({ ...user, organization: e.target.value })}
-                                        className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Highest Education
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={user?.highestEducation || ""}
-                                        onChange={(e) => setUser({ ...user, highestEducation: e.target.value })}
-                                        className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition"
-                                    />
-                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Highest Education"
+                                    value={user?.mentorProfile?.highestEducation || ""}
+                                    onChange={(e) =>
+                                        setUser({
+                                            ...user,
+                                            mentorProfile: {
+                                                ...user.mentorProfile,
+                                                highestEducation: e.target.value,
+                                            },
+                                        })
+                                    }
+                                    className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                                />
                             </>
                         )}
 
@@ -197,47 +322,33 @@ const Profile = () => {
                         </button>
                     </form>
 
-                    {/* Password Change Section */}
+                    {/* Password Section */}
                     <div className="border-t pt-6 mt-6">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">
                             Change Password
                         </h2>
                         <form onSubmit={handlePasswordChange} className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Current Password
-                                </label>
-                                <input
-                                    type="password"
-                                    value={oldPassword}
-                                    onChange={(e) => setOldPassword(e.target.value)}
-                                    className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm transition"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    New Password
-                                </label>
-                                <input
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm transition"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Confirm Password
-                                </label>
-                                <input
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm transition"
-                                />
-                            </div>
+                            <input
+                                type="password"
+                                placeholder="Current Password"
+                                value={oldPassword}
+                                onChange={(e) => setOldPassword(e.target.value)}
+                                className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                            />
+                            <input
+                                type="password"
+                                placeholder="New Password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                            />
+                            <input
+                                type="password"
+                                placeholder="Confirm Password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm"
+                            />
 
                             <button
                                 type="submit"

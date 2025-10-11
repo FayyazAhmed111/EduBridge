@@ -41,16 +41,17 @@ export const login = async (req, res) => {
     //  Account suspension check
     if (user.isSuspended) {
       return res.status(403).json({
-        message: "Your account has been suspended by an administrator. Please contact support.",
+        message:
+          "Your account has been suspended by an administrator. Please contact support.",
       });
     }
 
     if (user.suspendedUntil && user.suspendedUntil > Date.now()) {
       return res.status(403).json({
-        message: "Your account is temporarily locked due to multiple failed login attempts. Please reset your password to unlock.",
+        message:
+          "Your account is temporarily locked due to multiple failed login attempts. Please reset your password to unlock.",
       });
     }
-
 
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) {
@@ -72,14 +73,31 @@ export const login = async (req, res) => {
             <p>Your account has been <b>temporarily suspended for 1 hour</b>.</p>
             <p>Please reset your password to unlock immediately:</p>
             <a href="${process.env.FRONTEND_URL}/forgot-password">Reset Password</a>
-          `
+          `,
         });
 
-        return res.status(403).json({ message: "Account suspended. Reset password to unlock." });
+        return res
+          .status(403)
+          .json({ message: "Account suspended. Reset password to unlock." });
       }
 
       await user.save();
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // CheCKing StatusOF MENTOR
+    if (user.role === "mentor") {
+      const status = user.mentorProfile?.status;
+      if (status === "pending") {
+        return res.status(403).json({
+          message: "Your mentor account is pending approval from admin.",
+        });
+      }
+      if (status === "rejected") {
+        return res.status(403).json({
+          message: "Your mentor account has been rejected by admin.",
+        });
+      }
     }
 
     // reset protection fields
@@ -103,14 +121,10 @@ export const login = async (req, res) => {
       targetId: user._id,
       message: "User logged in",
     });
-
   } catch (e) {
     res.status(500).json({ message: "Login failed", error: e.message });
   }
 };
-
-
-
 
 // ---------- ME ----------
 export const me = async (req, res) => {
@@ -120,13 +134,25 @@ export const me = async (req, res) => {
 // ---------- STUDENT REGISTER ----------
 export const registerStudent = async (req, res) => {
   try {
-    const { name, email, phone, dob, password, level, institution, fieldOfStudy } = req.body || {};
+    const {
+      name,
+      email,
+      phone,
+      dob,
+      password,
+      level,
+      institution,
+      fieldOfStudy,
+    } = req.body || {};
     if (!name || !email || !password || !level) {
-      return res.status(400).json({ message: "name, email, password, level are required" });
+      return res
+        .status(400)
+        .json({ message: "name, email, password, level are required" });
     }
 
     const exists = await User.findOne({ email });
-    if (exists) return res.status(409).json({ message: "Email already in use" });
+    if (exists)
+      return res.status(409).json({ message: "Email already in use" });
 
     const user = await User.create({
       role: "student",
@@ -136,21 +162,21 @@ export const registerStudent = async (req, res) => {
       dob,
       password: await hash(password),
       isVerified: false,
-      studentProfile: { level, institution, fieldOfStudy }
+      studentProfile: { level, institution, fieldOfStudy },
     });
 
     const token = crypto.randomBytes(32).toString("hex");
     await EmailVerification.create({
       userId: user._id,
       token,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h expiry
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h expiry
     });
 
     await sendMail({
       to: email,
       subject: "Verify your EduBridge Account",
       html: `<p>Click below to verify:</p>
-             <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>`
+             <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>`,
     });
 
     await auditLog(req, {
@@ -161,46 +187,112 @@ export const registerStudent = async (req, res) => {
       message: "Student registered (verification email sent)",
     });
 
-    return res.status(201).json({ message: "Check your email to verify account." });
-
+    return res
+      .status(201)
+      .json({ message: "Check your email to verify account." });
   } catch (e) {
     res.status(500).json({ message: "Registration failed", error: e.message });
   }
 };
 
-
 // ---------- MENTOR REGISTER ----------
 export const registerMentor = async (req, res) => {
   try {
-    const { name, email, password, occupation, organization, highestEducation } = req.body || {};
+    // const { name, email, password, occupation, organization, highestEducation } = req.body || {};
+    const {
+      name,
+      email,
+      password,
+      phone,
+      dob,
+      gender,
+      occupation,
+      organization,
+      highestEducation,
+      yearsOfExperience,
+      expertise,
+      whyMentor,
+      mentorAreas,
+      availability,
+      format,
+      languages,
+      linkedin,
+      resumeUrl,
+      references,
+      idDocumentUrl,
+      termsAccepted,
+    } = req.body || {};
+
     if (!name || !email || !password) {
-      return res.status(400).json({ message: "name, email, password are required" });
+      return res
+        .status(400)
+        .json({ message: "name, email, password are required" });
     }
 
     const exists = await User.findOne({ email });
-    if (exists) return res.status(409).json({ message: "Email already in use" });
+    if (exists)
+      return res.status(409).json({ message: "Email already in use" });
 
     const user = await User.create({
+      // role: "mentor",
+      // name,
+      // email,
+      // password: await hash(password),
+      // isVerified: false,
+      // // mentorProfile: { occupation, organization, highestEducation, status: "pending" }
+      // mentorProfile: {
+      //   occupation,
+      //   organization,
+      //   highestEducation,
+      //   yearsOfExperience,
+      //   expertise: Array.isArray(expertise) ? expertise : [],
+      //   mentorAreas: Array.isArray(mentorAreas) ? mentorAreas : [],
+      //   whyMentor,
+      //   availability,
+      //   format,
+      //   languages: Array.isArray(languages) ? languages : [],
+      //   linkedin,
+      //   status: "pending",
       role: "mentor",
       name,
       email,
+      phone,
+      dob,
+      gender,
       password: await hash(password),
       isVerified: false,
-      mentorProfile: { occupation, organization, highestEducation, status: "pending" }
+      mentorProfile: {
+        occupation,
+        organization,
+        highestEducation,
+        yearsOfExperience,
+        expertise: Array.isArray(expertise) ? expertise : [expertise],
+        whyMentor,
+        mentorAreas: Array.isArray(mentorAreas) ? mentorAreas : [mentorAreas],
+        availability,
+        format,
+        languages: Array.isArray(languages) ? languages : [languages],
+        linkedin,
+        resumeUrl,
+        references,
+        idDocumentUrl,
+        termsAccepted,
+        status: "pending",
+      },
     });
 
     const token = crypto.randomBytes(32).toString("hex");
     await EmailVerification.create({
       userId: user._id,
       token,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h expiry
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h expiry
     });
 
     await sendMail({
       to: email,
       subject: "Verify your EduBridge Mentor Account",
       html: `<p>Click below to verify your mentor account:</p>
-             <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>`
+             <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>`,
     });
 
     await auditLog(req, {
@@ -211,8 +303,9 @@ export const registerMentor = async (req, res) => {
       message: "Mentor registered (verification email sent)",
     });
 
-    return res.status(201).json({ message: "Check your email to verify mentor account." });
-
+    return res
+      .status(201)
+      .json({ message: "Check your email to verify mentor account." });
   } catch (e) {
     res.status(500).json({ message: "Registration failed", error: e.message });
   }

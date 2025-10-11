@@ -485,9 +485,6 @@
 //     </div>
 //   )
 // }
-
-
-
 import { useState, useEffect } from "react";
 import { MessageCircle, Send, X, User } from "lucide-react";
 import Navbar from "../Components/Navbar";
@@ -505,27 +502,29 @@ export default function QAPage() {
   const [newQuestion, setNewQuestion] = useState("");
   const [newAnswer, setNewAnswer] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userEmail, setUserEmail] = useState("");
   const [userRole, setUserRole] = useState("");
   const [token, setToken] = useState("");
+  const [userId, setUserId] = useState("");
+  const [userName, setUserName] = useState("");
   const [errorModal, setErrorModal] = useState(false);
 
-  // 🔹 Load user info & fetch questions on mount
+  // Fetch user info and questions
   useEffect(() => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const email = localStorage.getItem("userEmail");
     const jwt = localStorage.getItem("accessToken");
     const role = localStorage.getItem("userRole");
+    const id = localStorage.getItem("userId");
+    const name = localStorage.getItem("userName");
 
     setIsLoggedIn(loggedIn);
-    setUserEmail(email || "");
     setToken(jwt || "");
     setUserRole(role || "");
+    setUserId(id || "");
+    setUserName(name || "");
 
     if (loggedIn && jwt) fetchQuestions(jwt);
   }, []);
 
-  // 🟢 Fetch all questions
   const fetchQuestions = async (jwt) => {
     try {
       const data = await getQuestions(jwt);
@@ -535,25 +534,31 @@ export default function QAPage() {
     }
   };
 
-  // 🟢 Ask a new question (students only)
+  // Student adds question
   const handleAddQuestion = async () => {
     if (!isLoggedIn) return setErrorModal(true);
-    if (userRole !== "student") {
-      alert("Only students can ask questions.");
-      return;
-    }
+    if (userRole !== "student") return alert("Only students can ask questions.");
     if (!newQuestion.trim()) return;
 
     try {
       const newQ = await postQuestion(newQuestion, newQuestion, token);
-      setQuestions((prev) => [newQ, ...prev]);
+      const withUser = {
+        ...newQ,
+        userId: {
+          _id: userId,
+          name: userName,
+          role: "student",
+        },
+        answers: [],
+      };
+      setQuestions((prev) => [withUser, ...prev]);
       setNewQuestion("");
     } catch (err) {
       console.error("Failed to add question:", err);
     }
   };
 
-  // 🟢 Select question and load answers
+  // Select question
   const handleSelectQuestion = async (q) => {
     try {
       const data = await getQuestionById(q._id, token);
@@ -563,28 +568,44 @@ export default function QAPage() {
     }
   };
 
-  // 🟢 Post an answer (mentors only)
+  // Add answer (mentor or student reply)
   const handleAddAnswer = async () => {
     if (!isLoggedIn) return setErrorModal(true);
-    if (userRole !== "mentor") {
-      alert("Only mentors can answer questions.");
-      return;
-    }
     if (!newAnswer.trim() || !selectedQuestion) return;
 
     try {
       const ans = await postAnswer(selectedQuestion.question._id, newAnswer, token);
+      const withUser = {
+        ...ans,
+        userId: { _id: userId, name: userName, role: userRole },
+      };
+
       setSelectedQuestion((prev) => ({
         ...prev,
-        answers: [...prev.answers, ans],
+        answers: [...(prev.answers || []), withUser],
       }));
+
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q._id === selectedQuestion.question._id
+            ? { ...q, answers: [...(q.answers || []), withUser] }
+            : q
+        )
+      );
+
       setNewAnswer("");
     } catch (err) {
       console.error("Failed to add answer:", err);
     }
   };
 
-  // 🧩 Helper to show initials
+  // ✅ Real-world name logic
+  const getDisplayName = (user) => {
+    if (!user) return "Unknown";
+    if (user._id === userId) return "You";
+    return user.name;
+  };
+
   const getInitials = (name) =>
     name
       ?.split(" ")
@@ -596,7 +617,7 @@ export default function QAPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 flex flex-col">
       <Navbar />
 
-      {/* 🌟 Hero Section */}
+      {/* Header */}
       <section className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white py-20 px-6">
         <div className="relative max-w-4xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl font-bold mb-4">
@@ -608,7 +629,7 @@ export default function QAPage() {
         </div>
       </section>
 
-      {/* 🧑‍🎓 Ask Question - only students see this */}
+      {/* Ask Question */}
       {userRole === "student" && (
         <section className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-10 max-w-5xl mx-auto w-full mt-12">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Ask a Question</h3>
@@ -623,7 +644,7 @@ export default function QAPage() {
             />
             <button
               onClick={handleAddQuestion}
-              className="bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
+              className="cursor-pointer bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
             >
               Ask
             </button>
@@ -631,8 +652,8 @@ export default function QAPage() {
         </section>
       )}
 
-      {/* 🧾 Questions List */}
-      <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-12">
+      {/* Question List */}
+      {/* <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Questions</h2>
         <div className="space-y-4">
           {questions.map((q) => (
@@ -652,7 +673,18 @@ export default function QAPage() {
                   <div className="flex items-center gap-4 text-sm text-gray-600">
                     <div className="flex items-center gap-1.5">
                       <User className="w-4 h-4" />
-                      <span>Asked by {q.userId?.name || "Unknown"}</span>
+                      <span>Asked by {getDisplayName(q.userId)}</span>
+                      {q.userId?.role && (
+                        <span
+                          className={`text-xs ml-2 px-2 py-0.5 rounded-full ${q.userId.role === "mentor"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-green-100 text-green-700"
+                            }`}
+                        >
+                          {q.userId.role.charAt(0).toUpperCase() +
+                            q.userId.role.slice(1)}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 text-indigo-600 font-medium">
                       <MessageCircle className="w-4 h-4" />
@@ -664,26 +696,101 @@ export default function QAPage() {
             </div>
           ))}
         </div>
+      </main> */}
+      <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Questions</h2>
+
+        {/* Show login prompt if user is not logged in */}
+        {!isLoggedIn ? (
+          <div className="flex justify-center items-center py-10">
+            <div className="bg-white/90 px-8 py-6 rounded-xl shadow text-center border">
+              <p className="text-lg font-semibold text-gray-700 mb-2">
+                🔒 Please login to view recent questions
+              </p>
+              <p className="text-sm text-gray-500">
+                Sign in to browse community questions and participate in discussions.
+              </p>
+            </div>
+          </div>
+        ) : questions.length === 0 ? (
+          <p className="text-center text-gray-500 mt-10 text-lg">
+            No questions found.
+          </p>
+        ) : (
+              <div className="space-y-4">
+                {questions.map((q) => (
+                  <div
+                    key={q._id}
+                    className="group bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all duration-300 cursor-pointer"
+                    onClick={() => handleSelectQuestion(q)}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm">
+                        {getInitials(q.userId?.name || "U")}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          {q.title}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1.5">
+                            <User className="w-4 h-4" />
+                        <span>Asked by {getDisplayName(q.userId)}</span>
+                        {q.userId?.role && (
+                          <span
+                            className={`text-xs ml-2 px-2 py-0.5 rounded-full ${q.userId.role === "mentor"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-green-100 text-green-700"
+                              }`}
+                          >
+                            {q.userId.role.charAt(0).toUpperCase() +
+                              q.userId.role.slice(1)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-indigo-600 font-medium">
+                        <MessageCircle className="w-4 h-4" />
+                        <span>{q.answers?.length || 0} answers</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+              </div>
+        )}
       </main>
 
-      {/* 💬 Question Modal */}
+      {/* Modal for selected question */}
       {selectedQuestion && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl relative max-h-[90vh] flex flex-col">
-            {/* Header */}
             <div className="p-6 border-b border-gray-200">
               <button
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full p-2 transition-colors"
                 onClick={() => setSelectedQuestion(null)}
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 cursor-pointer" />
               </button>
               <h2 className="text-2xl font-bold text-gray-900 pr-10">
                 {selectedQuestion.question?.title}
               </h2>
               <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
                 <User className="w-4 h-4" />
-                <span>Asked by {selectedQuestion.question?.userId?.name}</span>
+                <span>
+                  Asked by {getDisplayName(selectedQuestion.question?.userId)}
+                </span>
+                {selectedQuestion.question?.userId?.role && (
+                  <span
+                    className={`text-xs ml-1 px-2 py-0.5 rounded-full ${selectedQuestion.question.userId.role === "mentor"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-green-100 text-green-700"
+                      }`}
+                  >
+                    {selectedQuestion.question.userId.role.charAt(0).toUpperCase() +
+                      selectedQuestion.question.userId.role.slice(1)}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -695,10 +802,21 @@ export default function QAPage() {
               {selectedQuestion.answers?.map((ans) => (
                 <div
                   key={ans._id}
-                  className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-xl border border-indigo-100 mb-3"
+                  className={`${ans.userId?.role === "mentor" ? "bg-blue-50" : "bg-green-50"} p-5 rounded-xl border border-indigo-100 mb-3`}
                 >
-                  <p className="font-semibold text-gray-900 mb-1">
-                    {ans.userId?.name}
+                  <p className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                    {getDisplayName(ans.userId)}
+                    {ans.userId?.role && (
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${ans.userId.role === "mentor"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-green-100 text-green-700"
+                          }`}
+                      >
+                        {ans.userId.role.charAt(0).toUpperCase() +
+                          ans.userId.role.slice(1)}
+                      </span>
+                    )}
                   </p>
                   <p className="text-gray-700">{ans.body}</p>
                 </div>
@@ -711,26 +829,25 @@ export default function QAPage() {
               )}
             </div>
 
-            {/* Answer Input — visible only for mentors */}
-            {userRole === "mentor" && (
+            {/* Reply Box */}
+            {isLoggedIn && (
               <div className="p-6 border-t border-gray-200 bg-gray-50">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                  Your Answer
+                  Your Reply
                 </h3>
                 <div className="flex gap-3">
                   <input
                     type="text"
                     value={newAnswer}
                     onChange={(e) => setNewAnswer(e.target.value)}
-                    placeholder="Share your knowledge..."
+                    placeholder="Write a reply..."
                     className="flex-grow border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                     onKeyPress={(e) => e.key === "Enter" && handleAddAnswer()}
                   />
                   <button
                     onClick={handleAddAnswer}
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center gap-2"
+                    className="cursor-pointer bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center gap-2"
                   >
-                    <Send className="w-4 h-4" />
                     Submit
                   </button>
                 </div>
@@ -740,7 +857,7 @@ export default function QAPage() {
         </div>
       )}
 
-      {/* 🔐 Error Modal (for guests) */}
+      {/* Error Modal */}
       {errorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 text-center relative">
@@ -748,12 +865,14 @@ export default function QAPage() {
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
               onClick={() => setErrorModal(false)}
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 cursor-pointer" />
             </button>
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               ⚠️
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Login Required</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              Login Required
+            </h2>
             <p className="text-gray-600 mb-6">
               Please login to ask or answer questions in the community.
             </p>
