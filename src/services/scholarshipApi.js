@@ -32,17 +32,9 @@ export const searchScholarships = async (query = "") => {
 };
 
 // ---------- SUGGESTED (Students) ----------
-export const getSuggestedScholarships = async () => {
-  try {
-    const token = localStorage.getItem("accessToken");
-    if (!token) throw new Error("Not authenticated");
-
-    const res = await axios.get(`${API_URL}/suggested`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data.items || [];
-  } catch (error) {
-    console.error("Error fetching suggested scholarships:", error);
-    throw error.response?.data || { message: "Failed to fetch suggestions" };
-  }
+export const getSuggestedScholarships = async (token) => {
+  const res = await axios.get(`${API_URL}/suggested`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
 };

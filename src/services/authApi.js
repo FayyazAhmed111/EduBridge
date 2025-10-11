@@ -114,17 +114,6 @@ export const verifyEmail = async (token) => {
   }
 };
 
-// ---------- RESEND VERIFICATION ----------
-export const resendVerification = async (email) => {
-  try {
-    const res = await axios.post(`${API_URL}/resend-verification`, { email });
-    return res.data;
-  } catch (error) {
-    console.error("Error resending verification:", error);
-    throw error.response?.data || { message: "Failed to resend email" };
-  }
-};
-
 // ---------- PASSWORDS ----------
 export const forgotPassword = async (email) => {
   try {
@@ -189,8 +178,19 @@ export const deleteAccount = async (token) => {
     throw error.response?.data || { message: "Account deletion failed" };
   }
 };
+// ---------- RESEND VERIFICATION ----------
+export const resendVerification = async (email) => {
+  try {
+    const res = await axios.post(`${API_URL}/resend-verification`, { email });
+    return res.data;
+  } catch (error) {
+    console.error("Error resending verification:", error);
+    throw error.response?.data || { message: "Failed to resend verification email" };
+  }
+};
 
 // ---------- CLEAR LOCAL AUTH ----------
 export const clearAuth = () => {
   localStorage.clear();
 };
+

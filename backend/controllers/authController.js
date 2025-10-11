@@ -38,69 +38,73 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-    //  Account suspension check
+    // 🧱 Check for permanent or temporary suspension
     if (user.isSuspended) {
       return res.status(403).json({
         message:
-          "Your account has been suspended by an administrator. Please contact support.",
+          "Your account has been suspended by the administrator. Please contact support.",
       });
     }
 
-    if (user.suspendedUntil && user.suspendedUntil > Date.now()) {
+    if (user.suspendedUntil && user.suspendedUntil > new Date()) {
       return res.status(403).json({
         message:
-          "Your account is temporarily locked due to multiple failed login attempts. Please reset your password to unlock.",
+          "Your account is temporarily locked. Please reset your password or wait until suspension expires.",
       });
     }
 
+    // 🧩 Verify password
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) {
       user.failedLoginAttempts += 1;
 
-      // Suspend account after 5 failed attempts
       if (user.failedLoginAttempts >= 5) {
         user.isSuspended = true;
-        user.suspendedUntil = new Date(Date.now() + 60 * 60 * 1000); // 1 hour suspension
+        user.suspendedUntil = new Date(Date.now() + 60 * 60 * 1000); // 1 hour lock
         await user.save();
 
-        // Send suspicious activity email
         await sendMail({
           to: user.email,
           subject: "Suspicious Login Attempts Detected",
           html: `
             <p>Hello ${user.name},</p>
             <p>We detected multiple failed login attempts on your account.</p>
-            <p>Your account has been <b>temporarily suspended for 1 hour</b>.</p>
-            <p>Please reset your password to unlock immediately:</p>
+            <p>Your account has been temporarily suspended for 1 hour.</p>
+            <p>You can unlock it by resetting your password:</p>
             <a href="${process.env.FRONTEND_URL}/forgot-password">Reset Password</a>
           `,
         });
 
-        return res
-          .status(403)
-          .json({ message: "Account suspended. Reset password to unlock." });
+        return res.status(403).json({ message: "Account suspended due to failed login attempts. Reset password to unlock." });
       }
 
       await user.save();
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // CheCKing StatusOF MENTOR
+    // 🚫 Prevent login if email not verified
+   if (!user.isVerified && user.role !== "admin") {
+  return res.status(403).json({
+    message: "Please verify your email before logging in.",
+    resendLink: `${process.env.FRONTEND_URL}/resend-verification?email=${encodeURIComponent(user.email)}`
+  });
+}
+    if (user.isDeleted) {
+      return res.status(403).json({ message: "This account has been deleted." });
+    }
+
+    // 🧠 Mentor status check
     if (user.role === "mentor") {
       const status = user.mentorProfile?.status;
       if (status === "pending") {
-        return res.status(403).json({
-          message: "Your mentor account is pending approval from admin.",
-        });
+        return res.status(403).json({ message: "Your mentor account is pending admin approval." });
       }
       if (status === "rejected") {
-        return res.status(403).json({
-          message: "Your mentor account has been rejected by admin.",
-        });
+        return res.status(403).json({ message: "Your mentor account was rejected by admin." });
       }
     }
 
-    // reset protection fields
+    // ✅ Reset failed attempts
     user.failedLoginAttempts = 0;
     user.isSuspended = false;
     user.suspendedUntil = null;
@@ -111,20 +115,21 @@ export const login = async (req, res) => {
     user.refreshTokens.push(refreshToken);
     await user.save();
 
-    res.json({ accessToken, refreshToken, user });
-
-    //  Audit log
     await auditLog(req, {
       action: "auth.login",
       outcome: "success",
       targetType: "user",
       targetId: user._id,
-      message: "User logged in",
+      message: "User logged in successfully",
     });
+
+    res.json({ accessToken, refreshToken, user });
   } catch (e) {
+    console.error("Login error:", e);
     res.status(500).json({ message: "Login failed", error: e.message });
   }
 };
+
 
 // ---------- ME ----------
 export const me = async (req, res) => {
@@ -139,20 +144,31 @@ export const registerStudent = async (req, res) => {
       email,
       phone,
       dob,
+      gender,
       password,
       level,
       institution,
       fieldOfStudy,
+      gpa,
+      studentIdUrl,
+      educationHistory = [],
+      interests = [],
+      preferredStudyDestinations = [],
+      careerGoals,
+      termsAccepted
     } = req.body || {};
-    if (!name || !email || !password || !level) {
-      return res
-        .status(400)
-        .json({ message: "name, email, password, level are required" });
-    }
 
-    const exists = await User.findOne({ email });
-    if (exists)
-      return res.status(409).json({ message: "Email already in use" });
+    if (!name || !email || !password || !level)
+      return res.status(400).json({ message: "name, email, password, and level are required" });
+    if (!termsAccepted)
+      return res.status(400).json({ message: "You must accept the terms and conditions" });
+
+    // ✅ Duplicate check for email or phone
+    const existing = await User.findOne({
+      $or: [{ email }, { phone }],
+    });
+    if (existing)
+      return res.status(409).json({ message: "An account with this email or phone number already exists" });
 
     const user = await User.create({
       role: "student",
@@ -160,23 +176,40 @@ export const registerStudent = async (req, res) => {
       email,
       phone,
       dob,
+      gender,
       password: await hash(password),
       isVerified: false,
-      studentProfile: { level, institution, fieldOfStudy },
+      studentProfile: {
+        level,
+        institution,
+        fieldOfStudy,
+        gpa,
+        studentIdUrl,
+        termsAccepted: !!termsAccepted,
+        educationHistory: Array.isArray(educationHistory) ? educationHistory : [],
+        interests: Array.isArray(interests) ? interests : [interests],
+        preferredStudyDestinations: Array.isArray(preferredStudyDestinations)
+          ? preferredStudyDestinations
+          : [preferredStudyDestinations],
+        careerGoals
+      }
     });
 
     const token = crypto.randomBytes(32).toString("hex");
-    await EmailVerification.create({
-      userId: user._id,
-      token,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h expiry
-    });
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    await EmailVerification.create({ userId: user._id, token, expiresAt });
 
     await sendMail({
       to: email,
       subject: "Verify your EduBridge Account",
-      html: `<p>Click below to verify:</p>
-             <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>`,
+      html: `
+        <p>Welcome to EduBridge!</p>
+        <p>Please verify your email:</p>
+        <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>
+        <br/><p>This link will expire in 24 hours.</p>
+      `
     });
 
     await auditLog(req, {
@@ -184,21 +217,21 @@ export const registerStudent = async (req, res) => {
       outcome: "success",
       targetType: "user",
       targetId: user._id,
-      message: "Student registered (verification email sent)",
+      message: "Student registration initiated with verification email.",
     });
 
-    return res
-      .status(201)
-      .json({ message: "Check your email to verify account." });
+    return res.status(201).json({ message: "Registration successful. Check your email for verification." });
   } catch (e) {
+    console.error("Student registration error:", e);
     res.status(500).json({ message: "Registration failed", error: e.message });
   }
 };
 
+
+
 // ---------- MENTOR REGISTER ----------
 export const registerMentor = async (req, res) => {
   try {
-    // const { name, email, password, occupation, organization, highestEducation } = req.body || {};
     const {
       name,
       email,
@@ -220,39 +253,22 @@ export const registerMentor = async (req, res) => {
       resumeUrl,
       references,
       idDocumentUrl,
-      termsAccepted,
+      termsAccepted
     } = req.body || {};
 
-    if (!name || !email || !password) {
-      return res
-        .status(400)
-        .json({ message: "name, email, password are required" });
-    }
+    if (!name || !email || !password)
+      return res.status(400).json({ message: "name, email, password are required" });
+    if (!termsAccepted)
+      return res.status(400).json({ message: "You must accept the terms and conditions" });
 
-    const exists = await User.findOne({ email });
-    if (exists)
-      return res.status(409).json({ message: "Email already in use" });
+    // ✅ Duplicate check for email or phone
+    const existing = await User.findOne({
+      $or: [{ email }, { phone }],
+    });
+    if (existing)
+      return res.status(409).json({ message: "An account with this email or phone number already exists" });
 
     const user = await User.create({
-      // role: "mentor",
-      // name,
-      // email,
-      // password: await hash(password),
-      // isVerified: false,
-      // // mentorProfile: { occupation, organization, highestEducation, status: "pending" }
-      // mentorProfile: {
-      //   occupation,
-      //   organization,
-      //   highestEducation,
-      //   yearsOfExperience,
-      //   expertise: Array.isArray(expertise) ? expertise : [],
-      //   mentorAreas: Array.isArray(mentorAreas) ? mentorAreas : [],
-      //   whyMentor,
-      //   availability,
-      //   format,
-      //   languages: Array.isArray(languages) ? languages : [],
-      //   linkedin,
-      //   status: "pending",
       role: "mentor",
       name,
       email,
@@ -276,23 +292,26 @@ export const registerMentor = async (req, res) => {
         resumeUrl,
         references,
         idDocumentUrl,
-        termsAccepted,
-        status: "pending",
-      },
+        termsAccepted: !!termsAccepted,
+        status: "pending"
+      }
     });
 
     const token = crypto.randomBytes(32).toString("hex");
-    await EmailVerification.create({
-      userId: user._id,
-      token,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h expiry
-    });
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    await EmailVerification.create({ userId: user._id, token, expiresAt });
 
     await sendMail({
       to: email,
       subject: "Verify your EduBridge Mentor Account",
-      html: `<p>Click below to verify your mentor account:</p>
-             <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>`,
+      html: `
+        <p>Welcome to EduBridge, ${name}!</p>
+        <p>Please click below to verify your mentor account:</p>
+        <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>
+        <br/><p>This link will expire in 24 hours.</p>
+      `
     });
 
     await auditLog(req, {
@@ -300,13 +319,12 @@ export const registerMentor = async (req, res) => {
       outcome: "success",
       targetType: "user",
       targetId: user._id,
-      message: "Mentor registered (verification email sent)",
+      message: "Mentor registration initiated with verification email.",
     });
 
-    return res
-      .status(201)
-      .json({ message: "Check your email to verify mentor account." });
+    return res.status(201).json({ message: "Mentor registered successfully. Please verify your email." });
   } catch (e) {
+    console.error("Mentor registration error:", e);
     res.status(500).json({ message: "Registration failed", error: e.message });
   }
 };
@@ -400,72 +418,151 @@ export const registerAdmin = async (req, res) => {
     res.status(500).json({ message: "Admin creation failed", error: e.message });
   }
 };
-
-// ---------- VERIFY EMAIL ----------
 export const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({ message: "Missing verification token" });
+    }
+
     const record = await EmailVerification.findOne({ token });
-    if (!record || record.expiresAt < new Date()) {
-      return res.status(400).json({ message: "Invalid or expired link" });
+    if (!record) {
+      // Check if already verified
+      const alreadyVerified = await User.findOne({ isVerified: true, "emailVerificationToken": token });
+      if (alreadyVerified) {
+        return res.status(200).json({ message: "Email already verified." });
+      }
+      return res.status(400).json({ message: "Invalid or expired verification link." });
+    }
+
+    if (record.expiresAt < new Date()) {
+      await EmailVerification.deleteOne({ _id: record._id });
+      return res.status(400).json({ message: "Verification link expired." });
     }
 
     const user = await User.findById(record.userId);
-    if (!user) return res.status(400).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    if (user.isVerified) {
+      await EmailVerification.deleteOne({ _id: record._id });
+      return res.status(200).json({ message: "Email already verified." });
+    }
 
     user.isVerified = true;
     await user.save();
-    await EmailVerification.deleteMany({ userId: user._id });
+    await EmailVerification.deleteOne({ _id: record._id });
 
-    res.json({ message: "Email verified successfully." });
-    await auditLog(req, {
+    // ✅ Return JSON only — no redirects
+    return res.status(200).json({ message: "Email verified successfully!" });
+
+    // 9️⃣ Async audit log (no impact on response time)
+    auditLog(req, {
       action: "auth.verifyEmail",
       targetType: "user",
       targetId: user._id,
-      message: "Email verified",
-    });
+      message: "User verified email successfully.",
+    }).catch(console.error);
 
-  } catch (e) {
-    res.status(500).json({ message: "Verification failed", error: e.message });
+    
+
+  } catch (error) {
+    console.error("Verify email error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
-
-
 };
+
 
 // ---------- RESEND EMAIL VERIFICATION ----------
 export const resendEmailVerification = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: "Email is required" });
 
+    // 1️⃣ Validate input
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
+    }
+
+    // 2️⃣ Find user
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (user.isVerified) return res.status(400).json({ message: "Email already verified" });
+    if (!user) {
+      return res.status(404).json({ message: "No account found with this email." });
+    }
 
+    // 3️⃣ Check if already verified
+    if (user.isVerified) {
+      // Clean up any stray tokens
+      await EmailVerification.deleteMany({ userId: user._id });
+      return res.status(200).json({
+        message: "This email is already verified. You can log in now.",
+      });
+    }
+
+    // 4️⃣ Clean up old pending tokens
     await EmailVerification.deleteMany({ userId: user._id });
 
+    // 5️⃣ Create new secure token (24h validity)
     const token = crypto.randomBytes(32).toString("hex");
     await EmailVerification.create({
       userId: user._id,
       token,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
 
+    // 6️⃣ Build frontend verification link
+    const verifyLink = `${process.env.FRONTEND_URL}/verify-email/${token}`;
+
+    // 7️⃣ Send verification email
     await sendMail({
       to: email,
-      subject: "Resend - Verify your EduBridge Account",
-      html: `<p>Click below to verify your account:</p>
-             <a href="${process.env.FRONTEND_URL}/verify-email/${token}">Verify Email</a>`
+      subject: "Verify Your EduBridge Account",
+      html: `
+        <p>Hello ${user.name || "User"},</p>
+        <p>Please verify your email to activate your account:</p>
+        <a href="${verifyLink}"
+           style="
+             background:#4f46e5;
+             color:#fff;
+             padding:10px 20px;
+             text-decoration:none;
+             border-radius:6px;
+             display:inline-block;
+           ">
+           Verify Email
+        </a>
+        <p>This link will expire in 24 hours.</p>
+        <br/>
+        <p>If you did not create this account, you can ignore this email.</p>
+      `,
     });
 
-    res.json({ message: "Verification email resent." });
+    // 8️⃣ Respond immediately (fast UX, no redirect)
+    res.status(200).json({
+      message: "✅ Verification email has been resent. Please check your inbox.",
+      link: verifyLink,
+    });
 
+    // 9️⃣ Async audit log (no impact on response time)
+    auditLog(req, {
+      action: "auth.resendVerification",
+      targetType: "user",
+      targetId: user._id,
+      outcome: "success",
+      message: "Resent verification email",
+    }).catch(console.error);
 
-
-  } catch (e) {
-    res.status(500).json({ message: "Failed to resend verification", error: e.message });
+  } catch (error) {
+    console.error("❌ Resend verification error:", error);
+    res.status(500).json({
+      message: "Failed to resend verification email. Please try again later.",
+      error: error.message,
+    });
   }
 };
+
+
 
 // ---------- FORGOT PASSWORD ----------
 export const forgotPassword = async (req, res) => {

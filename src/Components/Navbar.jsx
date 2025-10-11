@@ -285,13 +285,7 @@ const Navbar = () => {
                   >
                     Register
                   </button>
-                  {/* 🛠 Dev Toggle Button (Mobile) */}
-                    {/* <button
-                    onClick={handleDevToggle}
-                      className="cursor-pointer w-full px-4 py-2 bg-gray-300 text-sm rounded-full font-medium hover:bg-gray-400 transition"
-                  >
-                    Dev
-                  </button> */}
+                  
                 </>
               )}
             </div>

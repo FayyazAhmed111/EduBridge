@@ -1,165 +1,22 @@
-// import React, { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { motion, AnimatePresence } from "framer-motion";
-// import { login } from "../services/authApi";
-
-// const LoginModal = ({ isOpen, onClose, onSwitch }) => {
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
-//   const [error, setError] = useState("");
-//   const navigate = useNavigate();
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     setError("");
-
-//     if (!email || !password) {
-//       return setError("⚠️ Please enter both email and password");
-//     }
-
-//     try {
-//       const data = await login(email, password);
-
-//       // Save tokens and user info in localStorage
-//       localStorage.setItem("accessToken", data.accessToken);
-//       localStorage.setItem("refreshToken", data.refreshToken);
-//       localStorage.setItem("userEmail", data.user.email);
-//       localStorage.setItem("userName", data.user.name);
-//       localStorage.setItem("userRole", data.user.role);
-//       localStorage.setItem("isLoggedIn", "true");
-
-//       onClose();
-//       navigate("/dashboard");
-//     } catch (err) {
-//       console.error("Login Error:", err);
-//       setError(err.message);
-//     }
-//   };
-
-//   return (
-//     <AnimatePresence>
-//       {isOpen && (
-//         <motion.div
-//           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-//           initial={{ opacity: 0 }}
-//           animate={{ opacity: 1 }}
-//           exit={{ opacity: 0 }}
-//         >
-//           <motion.div
-//             initial={{ scale: 0.9, opacity: 0, y: 30 }}
-//             animate={{ scale: 1, opacity: 1, y: 0 }}
-//             exit={{ scale: 0.9, opacity: 0, y: 30 }}
-//             transition={{ duration: 0.3 }}
-//             className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative"
-//           >
-//             <button
-//               className="cursor-pointer absolute top-4 right-4 text-gray-400 hover:text-gray-700"
-//               onClick={onClose}
-//             >
-//               ✕
-//             </button>
-
-//             <div className="text-center mb-6">
-//               <div className="w-14 h-14 mx-auto flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-2xl font-bold shadow-md">
-//                 🎓
-//               </div>
-//               <h1 className="text-2xl font-bold text-gray-900 mt-4">
-//                 Welcome Back
-//               </h1>
-//               <p className="text-sm text-gray-500">
-//                 Sign in to continue your EduBridge journey
-//               </p>
-//             </div>
-
-//             {error && (
-//               <motion.div
-//                 className="text-red-500 text-sm mb-3 bg-red-50 border border-red-200 px-3 py-2 rounded-lg"
-//                 initial={{ opacity: 0 }}
-//                 animate={{ opacity: 1 }}
-//               >
-//                 {error}
-//               </motion.div>
-//             )}
-
-//             <form className="space-y-5" onSubmit={handleSubmit}>
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Email
-//                 </label>
-//                 <input
-//                   type="email"
-//                   placeholder="your.email@uni.edu"
-//                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition"
-//                   value={email}
-//                   onChange={(e) => setEmail(e.target.value)}
-//                 />
-//               </div>
-
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Password
-//                 </label>
-//                 <input
-//                   type="password"
-//                   placeholder="••••••••"
-//                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition"
-//                   value={password}
-//                   onChange={(e) => setPassword(e.target.value)}
-//                 />
-//               </div>
-
-//               <button
-//                 type="submit"
-//                 className="cursor-pointer w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow hover:opacity-90 transition"
-//               >
-//                 Sign In
-//               </button>
-//             </form>
-
-//             <div className="flex justify-between text-sm text-gray-600 mt-5">
-//               <button
-//                 type="button"
-//                 onClick={() => navigate("/forgetpassword")}
-//                 className="hover:text-indigo-600 transition"
-//               >
-//                 Forgot Password?
-//               </button>
-//               <button
-//                 type="button"
-//                 onClick={() => {
-//                   onClose();
-//                   onSwitch && onSwitch("register");
-//                 }}
-//                 className="cursor-pointer text-indigo-600 hover:underline font-medium"
-//               >
-//                 Create an account
-//               </button>
-//             </div>
-//           </motion.div>
-//         </motion.div>
-//       )}
-//     </AnimatePresence>
-//   );
-// };
-
-// export default LoginModal;
-
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { login } from "../services/authApi";
+import { login, resendVerification } from "../services/authApi";
+import axios from "axios";
 
 const LoginModal = ({ isOpen, onClose, onSwitch }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setResendMessage("");
     setLoading(true);
 
     if (!email || !password) {
@@ -190,6 +47,8 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
         setError("Your mentor account was rejected by the admin. Contact support for help.");
       } else if (msg.includes("suspended")) {
         setError("Your account is temporarily suspended due to multiple failed attempts. Try later or reset your password.");
+      } else if (msg.toLowerCase().includes("verify")) {
+        setError("Please verify your email before logging in.");
       } else {
         setError(msg);
       }
@@ -197,6 +56,24 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
       setLoading(false);
     }
   };
+
+  const handleResendVerification = async () => {
+  if (!email) {
+    setError("Please enter your email first to resend verification.");
+    return;
+  }
+  setResending(true);
+  setResendMessage("");
+  try {
+    await resendVerification(email);
+    setResendMessage("Verification email has been resent! Please check your inbox.");
+  } catch (err) {
+    setResendMessage("Failed to resend verification email. Try again later.");
+  } finally {
+    setResending(false);
+  }
+};
+
 
   return (
     <AnimatePresence>
@@ -214,6 +91,7 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
             transition={{ duration: 0.3 }}
             className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative"
           >
+            {/* Close Button */}
             <button
               className="cursor-pointer absolute top-4 right-4 text-gray-400 hover:text-gray-700"
               onClick={onClose}
@@ -221,6 +99,7 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
               ✕
             </button>
 
+            {/* Header */}
             <div className="text-center mb-6">
               <div className="w-14 h-14 mx-auto flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-2xl font-bold shadow-md">
                 🎓
@@ -233,6 +112,7 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
               </p>
             </div>
 
+            {/* Error + Resend Section */}
             {error && (
               <motion.div
                 className="text-red-600 text-sm mb-4 bg-red-50 border border-red-200 px-4 py-2 rounded-lg"
@@ -240,9 +120,27 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
                 animate={{ opacity: 1 }}
               >
                 {error}
+
+                {error.toLowerCase().includes("verify") && (
+                  <div className="mt-2">
+                    <button
+                      onClick={handleResendVerification}
+                      disabled={resending}
+                      className="text-indigo-600 font-medium hover:underline disabled:opacity-50"
+                    >
+                      {resending ? "Sending..." : "Click here to resend verification email"}
+                    </button>
+                    {resendMessage && (
+                      <p className="mt-2 text-green-600 text-xs">
+                        {resendMessage}
+                      </p>
+                    )}
+                  </div>
+                )}
               </motion.div>
             )}
 
+            {/* Form */}
             <form className="space-y-5" onSubmit={handleSubmit}>
               <input
                 type="email"
@@ -268,6 +166,7 @@ const LoginModal = ({ isOpen, onClose, onSwitch }) => {
               </button>
             </form>
 
+            {/* Footer Links */}
             <div className="flex justify-between text-sm text-gray-600 mt-5">
               <button
                 type="button"
