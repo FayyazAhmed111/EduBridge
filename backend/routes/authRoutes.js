@@ -36,8 +36,10 @@ const router = Router();
  *             properties:
  *               email:
  *                 type: string
+ *                 example: user@example.com
  *               password:
  *                 type: string
+ *                 example: Pass@123
  *     responses:
  *       200:
  *         description: Login successful
@@ -120,8 +122,28 @@ const router = Router();
  *                 type: string
  *               password:
  *                 type: string
+ *               phone:
+ *                 type: string
+ *               dob:
+ *                 type: string
+ *                 format: date
+ *               gender:
+ *                 type: string
+ *                 enum: [Male, Female, Other]
  *               level:
  *                 type: string
+ *                 enum: [High School, College, University]
+ *               institution:
+ *                 type: string
+ *               fieldOfStudy:
+ *                 type: string
+ *               gpa:
+ *                 type: string
+ *               studentIdUrl:
+ *                 type: string
+ *                 description: URL of uploaded student ID
+ *               termsAccepted:
+ *                 type: boolean
  *     responses:
  *       201:
  *         description: Student registered
@@ -153,6 +175,40 @@ const router = Router();
  *                 type: string
  *               highestEducation:
  *                 type: string
+ *               expertise:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               yearsOfExperience:
+ *                 type: number
+ *               whyMentor:
+ *                 type: string
+ *               mentorAreas:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               menteeLevel:
+ *                 type: string
+ *                 enum: [High School, College, Postgraduate, Early Career]
+ *               availability:
+ *                 type: string
+ *               format:
+ *                 type: string
+ *                 enum: [Online, In-person, Both]
+ *               languages:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               linkedin:
+ *                 type: string
+ *               resumeUrl:
+ *                 type: string
+ *               references:
+ *                 type: string
+ *               idDocumentUrl:
+ *                 type: string
+ *               termsAccepted:
+ *                 type: boolean
  *     responses:
  *       201:
  *         description: Mentor registered
