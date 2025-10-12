@@ -1,12 +1,10 @@
 import axios from "axios";
 import Config from "../Constants/Config";
 
-// ✅ Create base API instance
 const API = axios.create({
   baseURL: `${Config.API_BASE_URL}`,
 });
 
-// ✅ Automatically attach JWT token
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -38,15 +36,62 @@ export const rejectMentor = async (id) =>
 // ----------------------------------------------------
 // FORUM MODERATION
 // ----------------------------------------------------
-export const listForumPosts = async () => API.get("/api/admin/forums");
-export const hidePost = async (id) => API.post(`/api/admin/forums/${id}/hide`);
-export const deletePost = async (id) => API.delete(`/api/admin/forums/${id}`);
+
+export const getAllQuestions = async (token) => {
+  try {
+    const res = await axios.get(`${API_URL}/questions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching forum questions:", error);
+    throw error.response?.data || { message: "Failed to load questions" };
+  }
+};
+
+export const getQuestionDetails = async (id, token) => {
+  try {
+    const res = await axios.get(`${API_URL}/questions/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching question details:", error);
+    throw error.response?.data || { message: "Failed to load question" };
+  }
+};
+
+
+export const deleteQuestion = async (id, token) => {
+  try {
+    const res = await axios.delete(`${API_URL}/questions/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error deleting question:", error);
+    throw error.response?.data || { message: "Failed to delete question" };
+  }
+};
+
+
+export const deleteAnswer = async (aid, token) => {
+  try {
+    const res = await axios.delete(`${API_URL}/answers/${aid}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error deleting answer:", error);
+    throw error.response?.data || { message: "Failed to delete answer" };
+  }
+};
+
 
 // ----------------------------------------------------
 // SCHOLARSHIPS
 // ----------------------------------------------------
-export const listScholarships = async () => API.get("/api/admin/scholarships");
-
+export const listScholarships = () => API.get("/api/scholarships");
 // ----------------------------------------------------
 // AUDIT LOGS
 // ----------------------------------------------------
@@ -104,35 +149,3 @@ export const rejectTestimonial = async (id) =>
   API.put(`/api/testimonials/${id}/reject`);
 
 // ----------------------------------------------------
-// EXPORT ALL IN ONE OBJECT (optional)
-export default {
-  listUsers,
-  getUserById,
-  deleteUser,
-  restoreUser,
-  suspendUser,
-  unsuspendUser,
-  listMentors,
-  getMentorById,
-  approveMentor,
-  rejectMentor,
-  listForumPosts,
-  hidePost,
-  deletePost,
-  listScholarships,
-  listAuditLogs,
-  getUserAuditLogs,
-  exportAuditLogs,
-  sendNotification,
-  sendAdminOtp,
-  createAdmin,
-  getDashboardStats,
-  getContactMessages,
-  markContactReviewed,
-  listTestimonials,
-  approveTestimonial,
-  rejectTestimonial,
-  adminLogin,
-  adminLogout,
-  refreshToken,
-};
