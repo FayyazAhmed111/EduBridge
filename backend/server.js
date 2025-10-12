@@ -40,7 +40,7 @@ app.use("/api/admin/audit", auditRoutes);
 app.use("/api/scholarships", scholarshipRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/forum", forumRoutes);
-app.use("/api/support", supportRoutes);
+app.use("/api/contact", supportRoutes);
 
 // Health check
 app.get("/", (_req, res) => res.send("EduBridge API Working"));

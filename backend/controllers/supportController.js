@@ -1,6 +1,7 @@
 import SupportTicket from "../models/supportTicket.js";
 import SupportChat from "../models/supportChat.js";
-
+import Contact from "../models/Contact.js";
+import { auditLog } from "../services/auditService.js";
 // Create support ticket (user side)
 export const createTicket = async (req, res) => {
   try {
@@ -79,5 +80,66 @@ export const getAllChats = async (_req, res) => {
     res.json(chats);
   } catch (e) {
     res.status(500).json({ message: "Failed to fetch all chats", error: e.message });
+  }
+};
+
+
+// Add new contact message
+export const addContactMessage = async (req, res) => {
+  try {
+    const { name, email, message } = req.body;
+
+    if (!name || !email || !message)
+      return res.status(400).json({ message: "All fields are required" });
+
+    const newMessage = await Contact.create({ name, email, message });
+
+    res.status(201).json({
+      message: "Message sent successfully",
+      contact: newMessage,
+    });
+
+    // Optional audit
+    if (req.user)
+      await auditLog(req, {
+        action: "contact.add",
+        targetType: "contact",
+        targetId: newMessage._id,
+        message: `Contact form submitted by ${name}`,
+      });
+  } catch (e) {
+    console.error("Error adding contact message:", e);
+    res.status(500).json({
+      message: "Failed to send message",
+      error: e.message,
+    });
+  }
+};
+
+// Admin: View all messages
+export const getContactMessages = async (req, res) => {
+  try {
+    const messages = await Contact.find().sort({ createdAt: -1 });
+    res.json(messages);
+  } catch (e) {
+    res.status(500).json({
+      message: "Failed to fetch contact messages",
+      error: e.message,
+    });
+  }
+};
+
+// Admin: Mark message as reviewed
+export const markReviewed = async (req, res) => {
+  try {
+    const contact = await Contact.findById(req.params.id);
+    if (!contact) return res.status(404).json({ message: "Message not found" });
+
+    contact.status = "reviewed";
+    await contact.save();
+
+    res.json({ message: "Marked as reviewed", contact });
+  } catch (e) {
+    res.status(500).json({ message: "Failed to update message", error: e.message });
   }
 };
