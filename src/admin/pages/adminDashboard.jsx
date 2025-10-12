@@ -29,6 +29,9 @@ import {
   getDashboardStats,
 } from "../../services/adminApi";
 import { useNavigate } from "react-router-dom";
+import AdminUsersPanel from "../components/AdminUsersPanel";
+import AdminMentorsPanel from "../components/AdminMentorsPanel";
+import AdminForumsPanel from "../components/AdminForumsPanel ";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -420,8 +423,28 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* table sections */}
-        {["users", "mentors", "forums", "scholarships", "logs"].includes(
+        {/* USERS sections */}
+        {activeTab === "users" && (
+          <div className="bg-white shadow-lg rounded-xl p-6">
+            <AdminUsersPanel />
+          </div>
+        )}
+
+
+        {/* MENTORS TAB */}
+        {activeTab === "mentors" && (
+          <div className="bg-white shadow-lg rounded-xl p-6">
+            <AdminMentorsPanel />
+          </div>
+        )}
+
+        {/* FORUMS TAB */}
+        {activeTab === "forums" && (
+          <div className="bg-white shadow-lg rounded-xl p-6">
+            <AdminForumsPanel />
+          </div>
+        )}
+        {["scholarships", "logs"].includes(
           activeTab
         ) && <div className="bg-white shadow-lg rounded-xl p-6">{renderTable()}</div>}
 
